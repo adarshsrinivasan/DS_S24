@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      # Pass volume named mysql-data to mysql container
+      - postgresql-data:/var/lib/postgresql/data
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+
+
+# Add volumes definition to create volume mysql-data referenced above
+volumes:
+  postgresql-data:
+    driver: local
+  mongodb_data:
+    driver: local
+
+networks:
+  postgres-network:
+    driver: bridge
