@@ -1,11 +1,12 @@
 module github.com/adarshsrinivasan/DS_S24/Assignment1
 
-go 1.21.6
+go 1.20
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/lib/pq v1.10.9
+	github.com/nexidian/gocliselect v1.0.0
 	github.com/oiime/logrusbun v0.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/uptrace/bun v1.1.17
@@ -15,10 +16,12 @@ require (
 )
 
 require (
+	github.com/buger/goterm v1.0.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
+	github.com/pkg/term v1.1.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect

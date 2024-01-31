@@ -168,7 +168,7 @@ func removeItemFromSale(ctx context.Context, productModel *ProductModel, session
 			return ProductModel{}, statusCode, err
 		}
 	} else {
-		productTableModel.Quantity = productModel.Quantity
+		productTableModel.Quantity -= productModel.Quantity
 		if statusCode, err := productTableModel.UpdateProductByID(ctx); err != nil {
 			err = fmt.Errorf("exception while Updating Product for ID:%s. %v", productModel.ID, err)
 			logrus.Errorf("removeItemFromSale: %v\n", err)

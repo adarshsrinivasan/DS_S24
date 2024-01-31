@@ -1,15 +1,28 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db"
-	"net/http"
+	"github.com/google/uuid"
+	"log"
+	"net"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+type Client struct {
+	uid  uuid.UUID
+	addr string
+}
+
+var activeClients map[string]Client
 
 const (
 	ServiceName       = "server"
@@ -28,7 +41,7 @@ func initializeSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeSQLDB: Initializating SQLDB...\n")
 	db.SqlDBClient, err = db.NewSQLClient(ctx, ServiceName)
 	if err != nil {
-		err = fmt.Errorf("exception while initializing SQLDB client. %v", err)
+		err = fmt.Errorf("exception while initializing SQLDB buyer. %v", err)
 		logrus.Errorf("initializeSQLDB: %v\n", err)
 		return err
 	}
@@ -70,7 +83,7 @@ func initializeNOSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeNOSQLDB: Initializating NOSQLDB...\n")
 	db.NoSQLClient, err = db.NewNoSQLClient(ctx, ServiceName)
 	if err != nil {
-		err = fmt.Errorf("exception while initializing NOSQLDB client. %v", err)
+		err = fmt.Errorf("exception while initializing NOSQLDB buyer. %v", err)
 		logrus.Errorf("initializeNOSQLDB: %v\n", err)
 		return err
 	}
@@ -99,14 +112,6 @@ func initializeDB(ctx context.Context) error {
 	return nil
 }
 
-func initializeHTTPRouter(ctx context.Context) error {
-	initializeHttpRoutes(ctx)
-	if httpRouter == nil {
-		return fmt.Errorf("http router not initialized")
-	}
-	return nil
-}
-
 func initialize() error {
 	logrus.Infof("initialize: Initializating...\n")
 	ctx = context.Background()
@@ -117,14 +122,84 @@ func initialize() error {
 		return err
 	}
 
-	if err := initializeHTTPRouter(ctx); err != nil {
-		err = fmt.Errorf("exception while initializing HTTP Router. %v", err)
-		logrus.Errorf("initialize: %v\n", err)
-		return err
-	}
-
 	logrus.Infof("initialize: Initialization completed Successfully!\n")
 	return nil
+}
+
+func initialExchange(conn net.Conn) {
+	t := time.Now()
+	myTime := t.Format(time.RFC3339Nano)
+	clientMsg, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		return
+	}
+	log.Println("Message from buyer at ", myTime, ": ", clientMsg)
+}
+
+func handleClient(conn net.Conn) {
+	if activeClients == nil {
+		activeClients = make(map[string]Client, 1000)
+	}
+	_, ok := activeClients[conn.RemoteAddr().String()]
+
+	if ok == false {
+		activeClients[conn.RemoteAddr().String()] = Client{
+			uid:  uuid.New(),
+			addr: conn.RemoteAddr().String(),
+		}
+	}
+	log.Printf("Client %s connected\n", conn.RemoteAddr().String())
+}
+
+func handleConnection(conn net.Conn) {
+	defer func(conn net.Conn) {
+		_ = conn.Close()
+		delete(activeClients, conn.RemoteAddr().String())
+		log.Println("Client " + conn.RemoteAddr().String() + " disconnected")
+	}(conn)
+
+	warning := false
+	for {
+		requestBody := make([]byte, 1000)
+		err := conn.SetDeadline(time.Now().Add(time.Minute * 4))
+
+		clientRequest := common.ClientRequest{}
+		_, err = conn.Read(requestBody)
+
+		if errors.Is(err, os.ErrDeadlineExceeded) {
+			log.Println("Warning: Sending a inactivity warning to the buyer")
+
+			_ = conn.SetDeadline(time.Now().Add(time.Minute))
+			warning = true
+			conn.Write([]byte("Session timeout warning: You will be automatically logged out in the next minute\n"))
+
+			_, err = conn.Read(requestBody)
+
+			if errors.Is(err, os.ErrDeadlineExceeded) {
+				if warning {
+					_ = conn.SetDeadline(time.Now().Add(time.Second * 10))
+					log.Printf("Client %s is inactive. Kicking the buyer out\n", conn.RemoteAddr().String())
+					conn.Write([]byte("Timeout: Logging you out!\n"))
+					return
+				}
+			}
+		}
+
+		if err != nil {
+			return
+		}
+
+		t := time.Now()
+		myTime := t.Format(time.RFC3339Nano)
+		log.Println("Received request at", myTime)
+
+		clientRequest.DeserializeRequest(requestBody)
+		if clientRequest.UserType == common.Seller {
+			listOfSellerHandlers(ctx, conn, clientRequest)
+		} else {
+			listOfBuyerHandlers(ctx, conn, clientRequest)
+		}
+	}
 }
 
 func main() {
@@ -132,6 +207,16 @@ func main() {
 		err = fmt.Errorf("exception while initializing.... %v", err)
 		logrus.Panicf("main: %v\n", err)
 	}
-	logrus.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", httpServerHost, httpServerPort), httpRouter))
+	log.Println("Server Listening ...")
+	if l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", httpServerHost, httpServerPort)); err != nil {
+		logrus.Fatal("ERROR: Server listening failed.")
+	} else {
+		for {
+			conn, _ := l.Accept()
+			handleClient(conn)
+			initialExchange(conn)
+			go handleConnection(conn)
+		}
+	}
 
 }

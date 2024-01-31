@@ -59,7 +59,7 @@ func NewNoSQLClient(ctx context.Context, applicationName string) (*Client, error
 		return nil, err
 	}
 
-	//return client.Database(dbName).Collection(main.main.ProductTableName), nil
+	//return buyer.Database(dbName).Collection(main.main.ProductTableName), nil
 	return &Client{
 		client:   client,
 		dbClient: client.Database(dbName),
