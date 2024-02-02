@@ -2,13 +2,8 @@ package common
 
 import (
 	"bufio"
-	"context"
 	"os"
 	"strings"
-)
-
-var (
-	Ctx context.Context
 )
 
 func GetEnv(key, fallback string) string {

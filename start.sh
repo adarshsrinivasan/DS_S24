@@ -2,50 +2,54 @@
 
 set +x
 
+# shellcheck disable=SC2059
 printf "Startup script - $1 \n"
 
 IP_PREFIX="10.20.1"
-
-# Install Git
-sudo apt update -y
-sudo apt install -y git
-
 GO_VERSION="1.21.6"
-DOCKER_COMPOSE_VERSION="2.24.5"
+
+# Install Packages
+sudo apt update -y
+sudo apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    git
 
 # Install Go
-wget https://golang.org/dl/go$(GO_VERSION).linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go$(GO_VERSION).linux-amd64.tar.gz
+wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export GOPATH=$HOME/go' >> ~/.bashrc
 echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
+# shellcheck disable=SC1090
 source ~/.bashrc
 
 # Create the GOPATH directory
 mkdir -p $HOME/go $HOME/go/bin $HOME/go/src
 
 # Install Docker
-sudo apt-get remove docker docker-engine docker.io containerd runc
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
 sudo apt-get update -y
-sudo apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+sudo apt-get -y install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
 echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update -y
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+
+sudo apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Add the user to the docker group
+sudo groupadd docker || true
 sudo usermod -aG docker $USER
-
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/download/$(DOCKER_COMPOSE_VERSION)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+newgrp docker
 
 # Verify installations
 echo "Verifying installations..."
@@ -54,18 +58,49 @@ go version
 docker --version
 docker-compose --version
 
-printf "Installing redis \n"
-sudo apt update
-sudo apt install redis-server -y
 node_num="$1"
 if [ "$node_num" == "0" ]; then
-
+  echo "Launching Postgres..."
+  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml up -d postgres
+  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml ps
+  echo "Postgres Launch Complete..."
 elif [ "$node_num" == "1" ]; then
-
+  echo "Launching MongoDB..."
+  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml up -d mongodb
+  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml ps
+  echo "MongoDB Launch Complete..."
 elif [ "$node_num" == "2" ]; then
-
+  echo "Launching Server-Seller..."
+  # shellcheck disable=SC2164
+  cd /local/repository/Assignment1/cmd/server/
+  rm server || true
+  go build -o server .
+  SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server
+  echo "Server-Seller Launch Complete..."
+elif [ "$node_num" == "3" ]; then
+  echo "Launching Server-Buyer..."
+  # shellcheck disable=SC2164
+  cd /local/repository/Assignment1/cmd/server/
+  rm server || true
+  go build -o server .
+  SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server
+  echo "Server-Buyer Launch Complete..."
+elif [ "$node_num" == "4" ]; then
+  echo "Launching Client-Seller..."
+  # shellcheck disable=SC2164
+  cd /local/repository/Assignment1/cmd/seller/
+  rm seller || true
+  go build -o seller .
+  echo "Client-Seller Launch Complete..."
+elif [ "$node_num" == "5" ]; then
+  echo "Launching Client-Buyer..."
+  # shellcheck disable=SC2164
+  cd /local/repository/Assignment1/cmd/buyer/
+  rm buyer || true
+  go build -o buyer .
+  echo "Client-Buyer Launch Complete..."
 else
-
+  echo "Invalid Node Number $node_num"
 fi
 
-printf "%s: %s\n" "$(date +"%T.%N")" "Redis setup completed!"
+printf "%s: %s\n" "$(date +"%T.%N")" "Setup completed!"

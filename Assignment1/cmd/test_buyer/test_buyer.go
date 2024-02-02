@@ -16,17 +16,17 @@ import (
 )
 
 const (
-	ServiceName       = "test_buyer"
-	HttpServerHostEnv = "HTTP_SERVER_HOST"
-	HttpServerPortEnv = "HTTP_SERVER_PORT"
+	ServiceName   = "test_buyer"
+	ServerHostEnv = "SERVER_HOST"
+	ServerPortEnv = "SERVER_PORT"
 )
 
 var (
 	err               error
 	ctx               context.Context
 	sessionID         string
-	httpServerHost    = common.GetEnv(HttpServerHostEnv, "localhost")
-	httpServerPort, _ = strconv.Atoi(common.GetEnv(HttpServerPortEnv, "50000"))
+	httpServerHost    = common.GetEnv(ServerHostEnv, "localhost")
+	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
 )
 
 func initialBuyerExchange(conn net.Conn) {

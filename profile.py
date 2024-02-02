@@ -4,6 +4,12 @@ Cloudlab profile to setup RDMA RoCE. Each node runs on Ubuntu 22.04.
 Instructions:
 Create an experiment in CloudLab.
 At least have 6 nodes in the topology for the experiment.
+Node1 = Postgres Server
+Node2 = MongoDB Server
+Node3 = Seller Server
+Node4 = Buyer Server
+Node5 = Seller Client
+Node6 = Buyer Client
 
 Wait for the profile instance to start, then click on the node in the topology and choose the `shell` menu item.
 """
@@ -43,7 +49,7 @@ for i in range(params.nodeCount):
 
 for i, node in enumerate(nodes):
     # Install and execute a script that is contained in the repository.
-    node.addService(pg.Execute(shell="sh", command="sudo /local/repository/start.sh {} > /local/repository/redis-{}-start.log 2>&1".format(i, i)))
+    node.addService(pg.Execute(shell="sh", command="sudo /local/repository/start.sh {} > /local/repository/setup-{}.log 2>&1".format(i, i)))
 
 # Print the RSpec to the enclosing page.
 pc.printRequestRSpec(request)

@@ -25,16 +25,16 @@ type Client struct {
 var activeClients map[string]Client
 
 const (
-	ServiceName       = "server"
-	HttpServerHostEnv = "HTTP_SERVER_HOST"
-	HttpServerPortEnv = "HTTP_SERVER_PORT"
+	ServiceName   = "server"
+	ServerHostEnv = "SERVER_HOST"
+	ServerPortEnv = "SERVER_PORT"
 )
 
 var (
 	err               error
 	ctx               context.Context
-	httpServerHost    = common.GetEnv(HttpServerHostEnv, "localhost")
-	httpServerPort, _ = strconv.Atoi(common.GetEnv(HttpServerPortEnv, "50000"))
+	httpServerHost    = common.GetEnv(ServerHostEnv, "localhost")
+	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
 )
 
 func initializeSQLDB(ctx context.Context) error {
