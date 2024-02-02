@@ -101,7 +101,7 @@ func createLogoutPayload() ([]byte, error) {
 }
 
 func main() {
-	log.Println("Initializing test buyer ...")
+	//log.Println("Initializing test buyer ...")
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", httpServerHost, httpServerPort))
 	if err != nil {
 		log.Fatal("Connection failed")
@@ -134,5 +134,5 @@ func main() {
 	defer conn.Close()
 
 	fmt.Printf("%f\n", float64(average/iterations))
-	log.Fatal("Closing connection. Exiting...")
+	//log.Fatal("Closing connection. Exiting...")
 }
