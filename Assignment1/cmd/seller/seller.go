@@ -124,11 +124,11 @@ func userSellerOptions() []byte {
 	case "0":
 		// Create Account
 		fmt.Println("Enter the name")
-		name, _ := reader.ReadString('\n')
+		name, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter the username")
-		username, _ := reader.ReadString('\n')
+		username, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter the Password")
-		pwd, _ := reader.ReadString('\n')
+		pwd, _ := common.ReadTrimString(reader)
 		body, _ = json.Marshal(&common.Credentials{
 			Name:     name,
 			UserName: username,
@@ -137,9 +137,9 @@ func userSellerOptions() []byte {
 	case "1":
 		// Login
 		fmt.Println("Enter the username")
-		username, _ := reader.ReadString('\n')
+		username, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter the Password")
-		pwd, _ := reader.ReadString('\n')
+		pwd, _ := common.ReadTrimString(reader)
 		body, _ = json.Marshal(&common.Credentials{
 			UserName: username,
 			Password: pwd,
@@ -148,24 +148,24 @@ func userSellerOptions() []byte {
 	case "3": // get seller ratings
 	case "4": // put an item for sale
 		fmt.Println("Enter item name")
-		name, _ := reader.ReadString('\n')
+		name, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item category")
-		category, _ := reader.ReadString('\n')
+		category, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item keywords")
-		keywords, _ := reader.ReadString('\n')
+		keywords, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item condition")
-		condition, _ := reader.ReadString('\n')
+		condition, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item price")
-		price, _ := reader.ReadString('\n')
+		price, _ := common.ReadTrimString(reader)
 		priceNew := strings.Split(strings.TrimSpace(price), "\n")[0]
 		floatPrice, _ := strconv.ParseFloat(priceNew, 32)
 
 		fmt.Println("Enter item quantity")
-		quantity, _ := reader.ReadString('\n')
+		quantity, _ := common.ReadTrimString(reader)
 		intQuantity, _ := strconv.ParseInt(strings.Split(strings.TrimSpace(quantity), "\n")[0], 10, 32)
 
 		body, _ = json.Marshal(&ProductModel{
@@ -178,25 +178,24 @@ func userSellerOptions() []byte {
 		})
 	case "5": // change the sale price of an item
 		fmt.Println("Enter item id")
-		itemId, _ := reader.ReadString('\n')
+		itemId, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter new sale price")
-		price, _ := reader.ReadString('\n')
-		priceNew := strings.Split(strings.TrimSpace(price), "\n")[0]
-		floatPrice, _ := strconv.ParseFloat(priceNew, 32)
+		price, _ := common.ReadTrimString(reader)
+		floatPrice, _ := strconv.ParseFloat(price, 32)
 
 		body, _ = json.Marshal(&ProductModel{
-			ID:        strings.Split(strings.TrimSpace(itemId), "\n")[0],
+			ID:        itemId,
 			SalePrice: float32(floatPrice),
 		})
 	case "6": // remove an item from sale
 		fmt.Println("Enter item id")
-		itemId, _ := reader.ReadString('\n')
+		itemId, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter item quantity")
-		quantity, _ := reader.ReadString('\n')
-		intQuantity, _ := strconv.ParseInt(strings.Split(strings.TrimSpace(quantity), "\n")[0], 10, 32)
+		quantity, _ := common.ReadTrimString(reader)
+		intQuantity, _ := strconv.ParseInt(quantity, 10, 32)
 
 		body, _ = json.Marshal(&ProductModel{
-			ID:       strings.Split(strings.TrimSpace(itemId), "\n")[0],
+			ID:       itemId,
 			Quantity: int(intQuantity),
 		})
 	case "7": // display

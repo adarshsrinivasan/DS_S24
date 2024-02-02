@@ -71,7 +71,7 @@ func searchProduct(ctx context.Context, productModel *ProductModel) ([]ProductMo
 	}
 
 	productTableModel := convertProductModelToProductTableModel(productModel)
-	productTableModels, statusCode, err := productTableModel.GetProductsByKeyWords(ctx)
+	productTableModels, statusCode, err := productTableModel.GetProductsByKeyWordsAndCategory(ctx)
 	if err != nil {
 		err = fmt.Errorf("exception while fetching Products data: %v", err)
 		logrus.Errorf("searchProduct: %v\n", err)

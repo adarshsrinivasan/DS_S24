@@ -1,8 +1,10 @@
 package common
 
 import (
+	"bufio"
 	"context"
 	"os"
+	"strings"
 )
 
 var (
@@ -14,4 +16,9 @@ func GetEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func ReadTrimString(reader *bufio.Reader) (string, error) {
+	str, err := reader.ReadString('\n')
+	return strings.Split(strings.TrimSpace(str), "\n")[0], err
 }

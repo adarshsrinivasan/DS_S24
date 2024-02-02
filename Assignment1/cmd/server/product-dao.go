@@ -91,7 +91,7 @@ type ProductTableModel struct {
 type ProductTableOps interface {
 	CreateProduct(ctx context.Context) (int, error)
 	GetProductByID(ctx context.Context) (int, error)
-	GetProductsByKeyWords(ctx context.Context) ([]ProductTableModel, int, error)
+	GetProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductTableModel, int, error)
 	GetProductsBySellerID(ctx context.Context) ([]ProductTableModel, int, error)
 	UpdateProductByID(ctx context.Context) (int, error)
 	DeleteProductByID(ctx context.Context) (int, error)
@@ -146,10 +146,10 @@ func (product *ProductTableModel) GetProductByID(ctx context.Context) (int, erro
 
 }
 
-func (product *ProductTableModel) GetProductsByKeyWords(ctx context.Context) ([]ProductTableModel, int, error) {
+func (product *ProductTableModel) GetProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductTableModel, int, error) {
 	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
-		logrus.Errorf("GetProductsByKeyWords: %v\n", err)
+		logrus.Errorf("GetProductsByKeyWordsAndCategory: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
 	whereClause := []db.WhereClauseType{
@@ -158,12 +158,17 @@ func (product *ProductTableModel) GetProductsByKeyWords(ctx context.Context) ([]
 			RelationType: db.IN,
 			ColumnValue:  product.Keywords,
 		},
+		{
+			ColumnName:   "category",
+			RelationType: db.EQUAL,
+			ColumnValue:  product.Category,
+		},
 	}
 	var result []ProductTableModel
 
 	if statusCode, err := db.NoSQLClient.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
-		logrus.Errorf("GetProductsByKeyWords: %v\n", err)
+		logrus.Errorf("GetProductsByKeyWordsAndCategory: %v\n", err)
 		return nil, statusCode, err
 	}
 	return result, http.StatusOK, nil

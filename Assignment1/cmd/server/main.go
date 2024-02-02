@@ -178,7 +178,7 @@ func handleConnection(conn net.Conn) {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				if warning {
 					_ = conn.SetDeadline(time.Now().Add(time.Second * 10))
-					log.Printf("Client %s is inactive. Kicking the buyer out\n", conn.RemoteAddr().String())
+					log.Printf("Client %s is inactive. Logging out the user\n", conn.RemoteAddr().String())
 					conn.Write([]byte("Timeout: Logging you out!\n"))
 					return
 				}

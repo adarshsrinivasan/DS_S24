@@ -111,11 +111,11 @@ func userBuyerOptions() []byte {
 	switch choice {
 	case "0": // Create Account
 		fmt.Println("Enter the name")
-		name, _ := reader.ReadString('\n')
+		name, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter the username")
-		username, _ := reader.ReadString('\n')
+		username, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter the password")
-		pwd, _ := reader.ReadString('\n')
+		pwd, _ := common.ReadTrimString(reader)
 		body, _ = json.Marshal(&common.Credentials{
 			Name:     name,
 			UserName: username,
@@ -123,9 +123,9 @@ func userBuyerOptions() []byte {
 		})
 	case "1": // LOGIN
 		fmt.Println("Enter the username")
-		username, _ := reader.ReadString('\n')
+		username, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter the Password")
-		pwd, _ := reader.ReadString('\n')
+		pwd, _ := common.ReadTrimString(reader)
 		body, _ = json.Marshal(&common.Credentials{
 			UserName: username,
 			Password: pwd,
@@ -134,9 +134,9 @@ func userBuyerOptions() []byte {
 	case "3":
 		// search items for sale
 		fmt.Println("Enter item category")
-		category, _ := reader.ReadString('\n')
+		category, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter item keywords")
-		keywords, _ := reader.ReadString('\n')
+		keywords, _ := common.ReadTrimString(reader)
 		body, _ = json.Marshal(&ProductModel{
 			Category: StringToCategory[category],
 			Keywords: strings.Split(keywords, ","),
@@ -144,27 +144,27 @@ func userBuyerOptions() []byte {
 	case "4":
 		// add item to shopping cart
 		fmt.Println("Enter item id")
-		id, _ := reader.ReadString('\n')
+		id, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item quantity")
-		quantity, _ := reader.ReadString('\n')
-		intQuantity, _ := strconv.ParseInt(strings.Split(strings.TrimSpace(quantity), "\n")[0], 10, 32)
+		quantity, _ := common.ReadTrimString(reader)
+		intQuantity, _ := strconv.ParseInt(quantity, 10, 32)
 
 		body, _ = json.Marshal(&ProductModel{
-			ID:       strings.Split(strings.TrimSpace(id), "\n")[0],
+			ID:       id,
 			Quantity: int(intQuantity),
 		})
 	case "5":
 		// remove item to shopping cart
 		fmt.Println("Enter item id")
-		id, _ := reader.ReadString('\n')
+		id, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item quantity")
-		quantity, _ := reader.ReadString('\n')
-		intQuantity, _ := strconv.ParseInt(strings.Split(strings.TrimSpace(quantity), "\n")[0], 10, 32)
+		quantity, _ := common.ReadTrimString(reader)
+		intQuantity, _ := strconv.ParseInt(quantity, 10, 32)
 
 		body, _ = json.Marshal(&ProductModel{
-			ID:       strings.Split(strings.TrimSpace(id), "\n")[0],
+			ID:       id,
 			Quantity: int(intQuantity),
 		})
 	case "6":
@@ -176,21 +176,21 @@ func userBuyerOptions() []byte {
 	case "9":
 		// provide feedback
 		fmt.Println("Enter item id")
-		id, _ := reader.ReadString('\n')
+		id, _ := common.ReadTrimString(reader)
 
 		fmt.Println("Enter item rating")
-		rating, _ := reader.ReadString('\n')
+		rating, _ := common.ReadTrimString(reader)
 
 		body, _ = json.Marshal(map[string]string{
-			"productID": strings.Split(strings.TrimSpace(id), "\n")[0],
-			"rating":    strings.Split(strings.TrimSpace(rating), "\n")[0],,
+			"productID": id,
+			"rating":    rating,
 		})
 	case "10":
 		// get seller ratings
 		fmt.Println("Enter item id")
-		id, _ := reader.ReadString('\n')
+		id, _ := common.ReadTrimString(reader)
 		body, _ = json.Marshal(map[string]string{
-			"productID": strings.Split(strings.TrimSpace(id), "\n")[0],
+			"productID": id,
 		})
 	case "11": // get buyer purchase history
 	case "12": //exit
