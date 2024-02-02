@@ -48,7 +48,7 @@ func buyerLogoutHandler(ctx context.Context, conn net.Conn, r common.ClientReque
 		common.RespondWithError(conn, statusCode, fmt.Sprintf("buyerLogoutHandler: exception while Logging out buyer. %v", err))
 		return
 	} else {
-		common.RespondWithStatusCode(conn, http.StatusOK, r.SessionID)
+		common.RespondWithStatusCode(conn, http.StatusOK, "")
 	}
 }
 

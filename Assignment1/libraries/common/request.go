@@ -19,22 +19,24 @@ type ClientRequest struct {
 	Body      []byte
 }
 
-func (req *ClientRequest) SerializeRequest() []byte {
+func (req *ClientRequest) SerializeRequest() ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)
 	err := encoder.Encode(req)
 	if err != nil {
 		log.Fatal("Encode error:", err)
+		return nil, err
 	}
-	return buffer.Bytes()
+	return buffer.Bytes(), nil
 }
 
-func (req *ClientRequest) DeserializeRequest(data []byte) {
+func (req *ClientRequest) DeserializeRequest(data []byte) error {
 	var buffer bytes.Buffer
 	buffer.Write(data)
 	decoder := gob.NewDecoder(&buffer)
 	if err := decoder.Decode(&req); err != nil {
 		log.Fatal("Decode error:", err)
-		return
+		return err
 	}
+	return nil
 }

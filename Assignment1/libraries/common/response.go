@@ -17,28 +17,34 @@ type ClientResponse struct {
 	Message    string
 }
 
-func (req *ClientResponse) SerializeRequest() []byte {
+func (req *ClientResponse) SerializeRequest() ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)
 	err := encoder.Encode(req)
 	if err != nil {
 		log.Fatal("Encode error:", err)
+		return nil, err
 	}
-	return buffer.Bytes()
+	return buffer.Bytes(), nil
 }
 
-func (req *ClientResponse) DeserializeRequest(data []byte) {
+func (req *ClientResponse) DeserializeRequest(data []byte) error {
 	var buffer bytes.Buffer
 	buffer.Write(data)
 	decoder := gob.NewDecoder(&buffer)
 	if err := decoder.Decode(&req); err != nil {
 		log.Fatal("Decode error:", err)
-		return
+		return err
 	}
+	return nil
 }
 
 func (req *ClientResponse) LogResponse() {
-	log.Println("Code: " + strconv.Itoa(req.StatusCode) + " Body: " + req.Message)
+	if req.Message != "" {
+		log.Println("Code: " + strconv.Itoa(req.StatusCode) + " Body: " + req.Message)
+	} else {
+		log.Println("Code: " + strconv.Itoa(req.StatusCode))
+	}
 }
 
 func RespondWithError(conn net.Conn, code int, message string) {
@@ -47,7 +53,9 @@ func RespondWithError(conn net.Conn, code int, message string) {
 		StatusCode: code,
 		Message:    message,
 	}
-	conn.Write(response.SerializeRequest())
+	var serializedPayload []byte
+	serializedPayload, _ = response.SerializeRequest()
+	conn.Write(serializedPayload)
 }
 
 func RespondWithJSON(conn net.Conn, code int, sessionID string, message interface{}) {
@@ -57,16 +65,19 @@ func RespondWithJSON(conn net.Conn, code int, sessionID string, message interfac
 		StatusCode: code,
 		Message:    string(body),
 	}
-	conn.Write(response.SerializeRequest())
+	var serializedPayload []byte
+	serializedPayload, _ = response.SerializeRequest()
+	conn.Write(serializedPayload)
 }
 
 func RespondWithStatusCode(conn net.Conn, code int, sessionID string) {
 	response := ClientResponse{
 		SessionID:  sessionID,
 		StatusCode: code,
-		Message:    "Success",
 	}
-	conn.Write(response.SerializeRequest())
+	var serializedPayload []byte
+	serializedPayload, _ = response.SerializeRequest()
+	conn.Write(serializedPayload)
 }
 
 //func RespondWithError(w http.ResponseWriter, code int, message string) {

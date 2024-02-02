@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
 	"github.com/nexidian/gocliselect"
+	"github.com/sirupsen/logrus"
 	"log"
 	"net"
 	"os"
@@ -103,7 +104,7 @@ func initialSellerExchange(conn net.Conn) {
 	conn.Write([]byte("Hi Server. I am a seller: " + myTime))
 }
 
-func userSellerOptions() []byte {
+func userSellerOptions() ([]byte, error) {
 	menu := gocliselect.NewMenu("Welcome! \nSelect an option: ")
 
 	menu.AddItem("Create an account", "0")
@@ -200,7 +201,7 @@ func userSellerOptions() []byte {
 		})
 	case "7": // display
 	case "8":
-		return nil
+		return nil, nil
 	}
 	requestPayload := common.ClientRequest{
 		SessionID: sessionID,
@@ -209,8 +210,12 @@ func userSellerOptions() []byte {
 		Body:      body,
 	}
 
-	payload := requestPayload.SerializeRequest()
-	return payload
+	var serializedPayload []byte
+	if serializedPayload, err = requestPayload.SerializeRequest(); err != nil {
+		logrus.Errorf("userSellerOptions: exception when trying to serialize the payload: %v", err)
+		return nil, err
+	}
+	return serializedPayload, nil
 }
 
 func handleConcurrentMessagesFromServer(conn net.Conn) {
@@ -221,7 +226,11 @@ func handleConcurrentMessagesFromServer(conn net.Conn) {
 		if _, err := conn.Read(requestBody); err != nil {
 			return
 		}
-		response.DeserializeRequest(requestBody)
+		err := response.DeserializeRequest(requestBody)
+		if err != nil {
+			logrus.Errorf("handleConcurrentMessagesFromServer: exception when trying to deserialize the payload: %v", err)
+			return
+		}
 
 		if response.SessionID != "" {
 			sessionID = response.SessionID
@@ -247,7 +256,11 @@ func main() {
 	go handleConcurrentMessagesFromServer(conn)
 
 	for {
-		buffer := userSellerOptions()
+		var buffer []byte
+		if buffer, err = userSellerOptions(); err != nil {
+			logrus.Error(err)
+			break
+		}
 		if buffer == nil {
 			break
 		} else {

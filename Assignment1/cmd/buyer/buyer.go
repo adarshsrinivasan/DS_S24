@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
 	"github.com/nexidian/gocliselect"
+	"github.com/sirupsen/logrus"
 	"log"
 	"net"
 	"os"
@@ -87,7 +88,7 @@ var StringToCategory = map[string]CATEGORY{
 	"NINE":  NINE,
 }
 
-func userBuyerOptions() []byte {
+func userBuyerOptions() ([]byte, error) {
 	menu := gocliselect.NewMenu("Welcome! \nSelect an option: ")
 
 	menu.AddItem("Create an account", "0")
@@ -194,7 +195,7 @@ func userBuyerOptions() []byte {
 		})
 	case "11": // get buyer purchase history
 	case "12": //exit
-		return nil
+		return nil, nil
 	}
 	requestPayload := common.ClientRequest{
 		SessionID: sessionID,
@@ -203,8 +204,12 @@ func userBuyerOptions() []byte {
 		Body:      body,
 	}
 
-	payload := requestPayload.SerializeRequest()
-	return payload
+	var serializedPayload []byte
+	if serializedPayload, err = requestPayload.SerializeRequest(); err != nil {
+		logrus.Errorf("userBuyerOptions: exception when trying to serialize the payload: %v", err)
+		return nil, err
+	}
+	return serializedPayload, nil
 }
 
 func initialBuyerExchange(conn net.Conn) {
@@ -247,13 +252,13 @@ func main() {
 	go handleConcurrentMessagesFromServer(conn)
 
 	for {
-		buffer := userBuyerOptions()
-		if buffer == nil {
+		var buffer []byte
+		if buffer, err = userBuyerOptions(); err != nil {
+			logrus.Error(err)
 			break
-		} else {
-			log.Println("Sending buffer to server at ", time.Now().Format(time.RFC3339Nano))
-			conn.Write(buffer)
 		}
+		log.Println("Sending buffer to server at ", time.Now().Format(time.RFC3339Nano))
+		conn.Write(buffer)
 
 		time.Sleep(2 * time.Second)
 	}
