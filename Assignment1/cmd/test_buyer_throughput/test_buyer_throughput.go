@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,24 +8,23 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	ServiceName   = "test_buyer"
-	ServerHostEnv = "SERVER_HOST"
-	ServerPortEnv = "SERVER_PORT"
+	ServiceName       = "test_buyer_response"
+	HttpServerHostEnv = "HTTP_SERVER_HOST"
+	HttpServerPortEnv = "HTTP_SERVER_PORT"
 )
 
 var (
 	err               error
 	ctx               context.Context
 	sessionID         string
-	httpServerHost    = common.GetEnv(ServerHostEnv, "localhost")
-	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
+	httpServerHost    = common.GetEnv(HttpServerHostEnv, "localhost")
+	httpServerPort, _ = strconv.Atoi(common.GetEnv(HttpServerPortEnv, "50000"))
 )
 
 func initialBuyerExchange(conn net.Conn) {
@@ -54,7 +52,7 @@ func handleConcurrentMessagesFromServer(conn net.Conn) {
 		} else {
 			sessionID = ""
 		}
-		response.LogResponse()
+		//response.LogResponse()
 
 		if strings.HasPrefix(response.Message, "Timeout: ") {
 			log.Fatal(response.Message)
@@ -104,14 +102,6 @@ func createLogoutPayload() ([]byte, error) {
 
 func main() {
 	log.Println("Initializing test buyer ...")
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Enter server host")
-	httpServerHost, _ := common.ReadTrimString(reader)
-	fmt.Println("Enter server port")
-	httpServerPortString, _ := common.ReadTrimString(reader)
-	httpServerPort, _ := strconv.Atoi(httpServerPortString)
-
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", httpServerHost, httpServerPort))
 	if err != nil {
 		log.Fatal("Connection failed")
@@ -121,34 +111,28 @@ func main() {
 	initialBuyerExchange(conn)
 	go handleConcurrentMessagesFromServer(conn)
 
-	fmt.Println("Enter the no of iterations")
-	iterationsString, _ := common.ReadTrimString(reader)
-	iterations, _ := strconv.Atoi(iterationsString)
-
-	for i := 0; i < iterations; i++ {
+	var iterations int64 = 10
+	var average int64 = 0
+	for i := 0; i < int(iterations); i++ {
 		var buffer []byte
-		if buffer, err = createLoginPayload(); err != nil {
-			logrus.Error(err)
-			break
+		start := time.Now()
+		duration := time.Since(start)
+		for j := 0; j < 1000; j++ {
+			if buffer, err = createLoginPayload(); err != nil {
+				logrus.Error(err)
+				break
+			}
+			//log.Println("Sending login buffer to server at ", time.Now().Format(time.RFC3339Nano))
+			conn.Write(buffer)
+			time.Sleep(1 * time.Second)
 		}
-
-		log.Println("Sending login buffer to server at ", time.Now().Format(time.RFC3339Nano))
-		conn.Write(buffer)
-
-		time.Sleep(1 * time.Second)
-
-		if buffer, err = createLogoutPayload(); err != nil {
-			logrus.Error(err)
-			break
-		}
-
-		log.Println("Sending logout buffer to server at ", time.Now().Format(time.RFC3339Nano))
-		conn.Write(buffer)
-
-		time.Sleep(1 * time.Second)
+		timeNanoSeconds := duration.Nanoseconds() - 1000000000
+		fmt.Printf("%f\n\n", timeNanoSeconds)
+		average += timeNanoSeconds
 
 	}
 	defer conn.Close()
 
+	fmt.Printf("%f\n", float64(average/iterations))
 	log.Fatal("Closing connection. Exiting...")
 }
