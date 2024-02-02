@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -161,6 +163,13 @@ func createLogoutPayload() ([]byte, error) {
 func main() {
 	log.Println("Initializing test buyer ...")
 
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Enter server host")
+	httpServerHost, _ := common.ReadTrimString(reader)
+	fmt.Println("Enter server port")
+	httpServerPortString, _ := common.ReadTrimString(reader)
+	httpServerPort, _ := strconv.Atoi(httpServerPortString)
+
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", httpServerHost, httpServerPort))
 	if err != nil {
 		log.Fatal("Connection failed")
@@ -170,7 +179,11 @@ func main() {
 	initialBuyerExchange(conn)
 	go handleConcurrentMessagesFromServer(conn)
 
-	for {
+	fmt.Println("Enter the no of iterations")
+	iterationsString, _ := common.ReadTrimString(reader)
+	iterations, _ := strconv.Atoi(iterationsString)
+
+	for i := 0; i < iterations; i++ {
 		var buffer []byte
 		if buffer, err = createLoginPayload(); err != nil {
 			logrus.Error(err)
