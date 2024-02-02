@@ -20,8 +20,8 @@ BANDWIDTH = 10000000
 pc = portal.Context()
 
 pc.defineParameter(
-    "nodeCount", "Number of nodes in the experiment.", portal.ParameterType.INTEGER, 3,
-    longDescription="Number of nodes in the topology. It is recommended to keep it 3")
+    "nodeCount", "Number of nodes in the experiment.", portal.ParameterType.INTEGER, 6,
+    longDescription="Number of nodes in the topology. It is recommended to keep it 6")
 
 params = pc.bindParameters()
 # Create a Request object to start building the RSpec.
