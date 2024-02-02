@@ -29,64 +29,6 @@ var (
 	httpServerPort, _ = strconv.Atoi(common.GetEnv(HttpServerPortEnv, "50000"))
 )
 
-type ProductModel struct {
-	ID        string    `json:"id,omitempty" bson:"_id,omitempty"`
-	Name      string    `json:"name,omitempty" bson:"name,omitempty"`
-	Category  CATEGORY  `json:"category,omitempty" bson:"category,omitempty"`
-	Keywords  []string  `json:"keywords,omitempty" bson:"keywords,omitempty"`
-	Condition CONDITION `json:"condition,omitempty" bson:"condition,omitempty"`
-	SalePrice float32   `json:"salePrice,omitempty" bson:"salePrice,omitempty"`
-	Quantity  int       `json:"quantity,omitempty" bson:"quantity"`
-}
-
-type CONDITION int
-
-const (
-	NEW CONDITION = iota
-	USED
-)
-
-type CATEGORY int
-
-const (
-	ZERO CATEGORY = iota
-	ONE
-	TWO
-	THREE
-	FOUR
-	FIVE
-	SIX
-	SEVEN
-	EIGHT
-	NINE
-)
-
-var CategoryToString = map[CATEGORY]string{
-	ZERO:  "ZERO",
-	ONE:   "ONE",
-	TWO:   "TWO",
-	THREE: "THREE",
-	FOUR:  "FOUR",
-	FIVE:  "FIVE",
-	SIX:   "SIX",
-	SEVEN: "SEVEN",
-	EIGHT: "EIGHT",
-	NINE:  "NINE",
-}
-
-var StringToCategory = map[string]CATEGORY{
-	"ZERO":  ZERO,
-	"ONE":   ONE,
-	"TWO":   TWO,
-	"THREE": THREE,
-	"FOUR":  FOUR,
-	"FIVE":  FIVE,
-	"SIX":   SIX,
-	"SEVEN": SEVEN,
-	"EIGHT": EIGHT,
-	"NINE":  NINE,
-}
-
 func initialBuyerExchange(conn net.Conn) {
 	t := time.Now()
 	myTime := t.Format(time.RFC3339Nano) + "\n"
