@@ -19,8 +19,8 @@ sudo apt-get install -y \
     git
 
 # Install Go
-wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
+wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export GOPATH=$HOME/go' >> ~/.bashrc
 echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
@@ -83,7 +83,7 @@ elif [ "$node_num" == "3" ]; then
   cd /local/repository/Assignment1/cmd/server/
   rm server || true
   go build -o server .
-  SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server
+  SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server
   echo "Server-Buyer Launch Complete..."
 elif [ "$node_num" == "4" ]; then
   echo "Launching Client-Seller..."
@@ -91,6 +91,7 @@ elif [ "$node_num" == "4" ]; then
   cd /local/repository/Assignment1/cmd/seller/
   rm seller || true
   go build -o seller .
+  #SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./seller
   echo "Client-Seller Launch Complete..."
 elif [ "$node_num" == "5" ]; then
   echo "Launching Client-Buyer..."
@@ -98,6 +99,7 @@ elif [ "$node_num" == "5" ]; then
   cd /local/repository/Assignment1/cmd/buyer/
   rm buyer || true
   go build -o buyer .
+  #SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./buyer
   echo "Client-Buyer Launch Complete..."
 else
   echo "Invalid Node Number $node_num"
