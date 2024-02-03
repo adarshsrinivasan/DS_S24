@@ -16,18 +16,17 @@ sudo apt-get install -y \
     curl \
     gnupg \
     lsb-release \
-    git
+    git \
+    golang-go
 
-# Install Go
-wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
+# Setup Go
+#wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
+#sudo tar -C /usr/local -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export GOPATH=$HOME/go' >> ~/.bashrc
 echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
 # shellcheck disable=SC1090
 source ~/.bashrc
-
-# Create the GOPATH directory
 mkdir -p $HOME/go $HOME/go/bin $HOME/go/src
 
 # Install Docker
