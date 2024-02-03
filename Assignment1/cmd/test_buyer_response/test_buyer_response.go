@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
-	"github.com/sirupsen/logrus"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -116,12 +117,12 @@ func main() {
 	for i := 0; i < int(iterations); i++ {
 		var buffer []byte
 		start := time.Now()
-		duration := time.Since(start)
 		if buffer, err = createLoginPayload(); err != nil {
 			logrus.Error(err)
 			break
 		}
-		average += duration.Nanoseconds()
+		duration := time.Since(start)
+		average += duration.Milliseconds()
 
 		//log.Println("Sending login buffer to server at ", time.Now().Format(time.RFC3339Nano))
 		conn.Write(buffer)

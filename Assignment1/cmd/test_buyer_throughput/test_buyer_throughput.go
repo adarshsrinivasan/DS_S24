@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
-	"github.com/sirupsen/logrus"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -111,13 +112,13 @@ func main() {
 	initialBuyerExchange(conn)
 	go handleConcurrentMessagesFromServer(conn)
 
-	var iterations int64 = 10
+	var iterations1 int64 = 10
+	var iterations2 int64 = 1000
 	var average int64 = 0
-	for i := 0; i < int(iterations); i++ {
+	for i := 0; i < int(iterations1); i++ {
 		var buffer []byte
 		start := time.Now()
-		duration := time.Since(start)
-		for j := 0; j < 1000; j++ {
+		for j := 0; j < int(iterations2); j++ {
 			if buffer, err = createLoginPayload(); err != nil {
 				logrus.Error(err)
 				break
@@ -126,13 +127,14 @@ func main() {
 			conn.Write(buffer)
 			time.Sleep(1 * time.Second)
 		}
-		timeNanoSeconds := duration.Nanoseconds() - 1000000000
-		fmt.Printf("%f\n\n", timeNanoSeconds)
-		average += timeNanoSeconds
+		duration := time.Since(start)
+		timeMilliSeconds := duration.Milliseconds() - (iterations2 * (1 * time.Second.Milliseconds()))
+		fmt.Printf("%d\n\n", timeMilliSeconds)
+		average += timeMilliSeconds
 
 	}
 	defer conn.Close()
 
-	fmt.Printf("%f\n", float64(average/iterations))
+	fmt.Printf("%f\n", float64(average/iterations1))
 	//log.Fatal("Closing connection. Exiting...")
 }

@@ -73,34 +73,50 @@ elif [ "$node_num" == "2" ]; then
   echo "Launching Server-Seller..."
   # shellcheck disable=SC2164
   cd /local/repository/Assignment1/cmd/server/
-  rm server || true
-  go build -o server .
-  SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server
+  rm server-seller || true
+  go build -o server-seller .
+  SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server-seller
   echo "Server-Seller Launch Complete..."
 elif [ "$node_num" == "3" ]; then
   echo "Launching Server-Buyer..."
   # shellcheck disable=SC2164
   cd /local/repository/Assignment1/cmd/server/
-  rm server || true
-  go build -o server .
-  SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server
+  rm server-buyer || true
+  go build -o server-buyer .
+  SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./server-buyer
   echo "Server-Buyer Launch Complete..."
 elif [ "$node_num" == "4" ]; then
   echo "Launching Client-Seller..."
   # shellcheck disable=SC2164
   cd /local/repository/Assignment1/cmd/seller/
-  rm seller || true
-  go build -o seller .
-  #SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./seller
+  rm client-seller || true
+  go build -o client-seller .
+  #SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./client-seller
   echo "Client-Seller Launch Complete..."
 elif [ "$node_num" == "5" ]; then
   echo "Launching Client-Buyer..."
   # shellcheck disable=SC2164
   cd /local/repository/Assignment1/cmd/buyer/
-  rm buyer || true
-  go build -o buyer .
-  #SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./buyer
+  rm client-buyer || true
+  go build -o client-buyer .
+  #SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./client-buyer
   echo "Client-Buyer Launch Complete..."
+elif [ "$node_num" == "6" ]; then
+  echo "Launching Test-Client-Buyer-Latency..."
+  # shellcheck disable=SC2164
+  cd /local/repository/Assignment1/cmd/test_buyer_response/
+  rm test-buyer-latency || true
+  go build -o test-buyer-latency .
+  #SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./test-buyer-latency
+  echo "Test-Client-Buyer-Latency Launch Complete..."
+elif [ "$node_num" == "7" ]; then
+  echo "Launching Test-Client-Buyer-Throughput..."
+  # shellcheck disable=SC2164
+  cd /local/repository/Assignment1/cmd/test_buyer_throughput/
+  rm test-buyer-throughput || true
+  go build -o test-buyer-throughput .
+  #SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace ./test-buyer-throughput
+  echo "Test-Client-Buyer-Throughput Launch Complete..."
 else
   echo "Invalid Node Number $node_num"
 fi
