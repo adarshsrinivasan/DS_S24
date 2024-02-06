@@ -1,5 +1,5 @@
 """
-Cloudlab profile to setup RDMA RoCE. Each node runs on Ubuntu 22.04.
+Cloudlab profile to setup. Each node runs on Ubuntu 22.04.
 
 Instructions:
 Create an experiment in CloudLab.

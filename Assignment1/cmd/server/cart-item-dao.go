@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/sql"
 	"net/http"
 	"reflect"
 	"time"
@@ -36,28 +37,40 @@ type CartItemTableModel struct {
 	SellerID         string    `json:"sellerID" bson:"sellerID" bun:"sellerID,notnull"`
 	Quantity         int       `json:"quantity" bson:"quantity" bun:"quantity,notnull"`
 	Price            float32   `json:"price" bson:"price,omitempty" bun:"price,notnull"`
+	Version          int       `json:"version" bson:"version" bun:"version,notnull"`
 	CreatedAt        time.Time `json:"createdAt"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt" bson:"updatedAt" bun:"updatedAt"`
 }
 
 func CreateCartItemTable(ctx context.Context) error {
 
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", CartItemTableName, err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateCartItemTable: %v\n", err)
 		return err
 	}
+	defer client.Close(ctx)
 
 	tableSchemaPtr := reflect.New(reflect.TypeOf(CartItemTableModel{}))
-	createTableQuery := db.SqlDBClient.NewCreateTable().
-		Model(tableSchemaPtr.Interface()).
-		IfNotExists().
-		ForeignKey(`("cartID") REFERENCES "cart_data" ("id") ON DELETE CASCADE`).
-		ForeignKey(`("sellerID") REFERENCES "seller_data" ("id") ON DELETE CASCADE`)
 
-	_, err := createTableQuery.Exec(ctx)
-	if err != nil {
-		err := fmt.Errorf("exception while creaiting event table %s. %v", err, CartItemTableName)
+	foreignKeys := []db.ForeignKey{
+		{
+			ColumnName:    "cartID",
+			SrcColumnName: "id",
+			SrcTableName:  CartTableName,
+			CascadeDelete: true,
+		},
+		{
+			ColumnName:    "sellerID",
+			SrcColumnName: "id",
+			SrcTableName:  SellerTableName,
+			CascadeDelete: true,
+		},
+	}
+
+	if err := client.CreateTable(ctx, tableSchemaPtr.Interface(), CartItemTableName, foreignKeys); err != nil {
+		err := fmt.Errorf("exception while creating table %s. %v", err, CartItemTableName)
 		logrus.Errorf("CreateCartItemTable: %v\n", err)
 		return err
 	}
@@ -66,17 +79,20 @@ func CreateCartItemTable(ctx context.Context) error {
 }
 
 func (cartItem *CartItemTableModel) CreateCartItem(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 
 	cartItem.ID = uuid.New().String()
+	cartItem.Version = 0
 	cartItem.CreatedAt = time.Now()
 	cartItem.UpdatedAt = time.Now()
 
-	if _, err := db.SqlDBClient.NewInsert().Model(cartItem).Exec(ctx); err != nil {
+	if err := client.Insert(ctx, cartItem, CartItemTableName); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Insert", CartItemTableName, err)
 		logrus.Errorf("CreateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -91,13 +107,7 @@ func (cartItem *CartItemTableModel) GetCartItemByID(ctx context.Context) (int, e
 		err              error
 	)
 
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("GetCartItemByCartID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-
-	if existingCartItem, _, err = cartItem.getByCartItemID(ctx); err != nil || existingCartItem.ID != cartItem.ID {
+	if existingCartItem, _, err = cartItem.getByColumn(ctx, "id", cartItem.ID); err != nil || existingCartItem.ID != cartItem.ID {
 		err := fmt.Errorf("unable to find cartItem with with id: %s. %v", cartItem.ID, err)
 		logrus.Errorf("GetCartItemByCartID: %v\n", err)
 		return http.StatusBadRequest, err
@@ -109,15 +119,13 @@ func (cartItem *CartItemTableModel) GetCartItemByID(ctx context.Context) (int, e
 }
 
 func (cartItem *CartItemTableModel) GetCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
-	var (
-		err error
-	)
-
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("GetCartItemByCartIDAndProductID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 
 	whereClause := []db.WhereClauseType{
 		{
@@ -132,11 +140,10 @@ func (cartItem *CartItemTableModel) GetCartItemByCartIDAndProductID(ctx context.
 		},
 	}
 	result := CartItemTableModel{}
-	_, statusCode, err := db.ReadUtil(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result)
-	if err != nil {
+	if _, err := client.Read(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
 		logrus.Errorf("GetCartItemByCartIDAndProductID: %v\n", err)
-		return statusCode, err
+		return http.StatusInternalServerError, err
 	}
 
 	copyCartItemObj(&result, cartItem)
@@ -146,11 +153,13 @@ func (cartItem *CartItemTableModel) GetCartItemByCartIDAndProductID(ctx context.
 
 func (cartItem *CartItemTableModel) ListCartItemByCartID(ctx context.Context) ([]CartItemTableModel, int, error) {
 
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("GetCartItemByCartID: %v\n", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		logrus.Errorf("ListCartItemByCartID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 
 	whereClause := []db.WhereClauseType{
 		{
@@ -160,28 +169,27 @@ func (cartItem *CartItemTableModel) ListCartItemByCartID(ctx context.Context) ([
 		},
 	}
 	var result []CartItemTableModel
-	_, statusCode, err := db.ReadUtil(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result)
-	if err != nil {
+	if _, err := client.Read(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
-		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, statusCode, err
+		logrus.Errorf("ListCartItemByCartID: %v\n", err)
+		return nil, http.StatusInternalServerError, err
 	}
 
 	return result, http.StatusOK, nil
 }
 
 func (cartItem *CartItemTableModel) UpdateCartItem(ctx context.Context) (int, error) {
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("UpdateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
+
 	cartItem.UpdatedAt = time.Now()
-	oldVersion := 0
-	updateQuery := db.PrepareUpdateQuery(ctx, &oldVersion, cartItem, false, true)
-	logrus.Infof("UpdateCartItem: Update query: %v", updateQuery.String())
-	_, err := updateQuery.Exec(ctx)
-	if err != nil {
+
+	if err := client.Update(ctx, cartItem, CartItemTableName, true); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Update", CartItemTableName, err)
 		logrus.Errorf("UpdateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -191,11 +199,14 @@ func (cartItem *CartItemTableModel) UpdateCartItem(ctx context.Context) (int, er
 }
 
 func (cartItem *CartItemTableModel) DeleteCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("DeleteCartItemByID: %v\n", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		logrus.Errorf("DeleteCartItemByCartIDAndProductID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
+
 	whereClauses := []db.WhereClauseType{
 		{
 			ColumnName:   "cartID",
@@ -209,32 +220,23 @@ func (cartItem *CartItemTableModel) DeleteCartItemByCartIDAndProductID(ctx conte
 		},
 	}
 
-	deleteQuery := db.SqlDBClient.NewDelete().
-		Model(cartItem)
-
-	// prepare whereClause.
-	queryStr, vals, err := db.CreateWhereClause(ctx, whereClauses)
-	if err != nil {
+	if err := client.Delete(ctx, cartItem, CartItemTableName, whereClauses); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
 		logrus.Errorf("DeleteCartItemByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	deleteQuery = deleteQuery.Where(queryStr, vals...)
 
-	if _, err := deleteQuery.Exec(ctx); err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
-		logrus.Errorf("DeleteCartItemByID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
 	return http.StatusOK, nil
 }
 
 func (cartItem *CartItemTableModel) DeleteCartItemByCartID(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteCartItemByCartID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 	whereClauses := []db.WhereClauseType{
 		{
 			ColumnName:   "cartID",
@@ -243,19 +245,7 @@ func (cartItem *CartItemTableModel) DeleteCartItemByCartID(ctx context.Context) 
 		},
 	}
 
-	deleteQuery := db.SqlDBClient.NewDelete().
-		Model(cartItem)
-
-	// prepare whereClause.
-	queryStr, vals, err := db.CreateWhereClause(ctx, whereClauses)
-	if err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
-		logrus.Errorf("DeleteCartItemByCartID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-	deleteQuery = deleteQuery.Where(queryStr, vals...)
-
-	if _, err := deleteQuery.Exec(ctx); err != nil {
+	if err := client.Delete(ctx, cartItem, CartItemTableName, whereClauses); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
 		logrus.Errorf("DeleteCartItemByCartID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -264,11 +254,14 @@ func (cartItem *CartItemTableModel) DeleteCartItemByCartID(ctx context.Context) 
 }
 
 func (cartItem *CartItemTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*CartItemTableModel, int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("getByColumn: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
+
 	whereClause := []db.WhereClauseType{
 		{
 			ColumnName:   columnName,
@@ -277,17 +270,13 @@ func (cartItem *CartItemTableModel) getByColumn(ctx context.Context, columnName 
 		},
 	}
 	result := CartItemTableModel{}
-	_, statusCode, err := db.ReadUtil(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result)
-	if err != nil {
+
+	if _, err := client.Read(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
 		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, statusCode, err
+		return nil, http.StatusInternalServerError, err
 	}
 	return &result, http.StatusOK, nil
-}
-
-func (cartItem *CartItemTableModel) getByCartItemID(ctx context.Context) (*CartItemTableModel, int, error) {
-	return cartItem.getByColumn(ctx, "id", cartItem.ID)
 }
 
 func copyCartItemObj(from, to *CartItemTableModel) {
@@ -297,6 +286,7 @@ func copyCartItemObj(from, to *CartItemTableModel) {
 	to.SellerID = from.SellerID
 	to.Quantity = from.Quantity
 	to.Price = from.Price
+	to.Version = from.Version
 	to.CreatedAt = from.CreatedAt
 	to.UpdatedAt = from.UpdatedAt
 }

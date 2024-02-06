@@ -47,6 +47,16 @@ const (
 	USED
 )
 
+var ConditionToString = map[CONDITION]string{
+	NEW:  "NEW",
+	USED: "USED",
+}
+
+var StringToCondition = map[string]CONDITION{
+	"NEW":  NEW,
+	"USED": USED,
+}
+
 type CATEGORY int
 
 const (

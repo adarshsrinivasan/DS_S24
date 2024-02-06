@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"log"
 )
 
@@ -39,4 +40,8 @@ func (req *ClientRequest) DeserializeRequest(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (req *ClientRequest) String() string {
+	return fmt.Sprintf("{SessionID: %s, Service: %s, UserType: %d, Body: %s}", req.SessionID, req.Service, req.UserType, string(req.Body))
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/nosql"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -99,17 +100,17 @@ type ProductTableOps interface {
 
 func CreateProductTable(ctx context.Context) error {
 
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("CreateProductTable: %v\n", err)
 		return err
 	}
 
-	return db.NoSQLClient.CreateCollection(ctx, ProductTableName)
+	return nosql.Client.CreateCollection(ctx, ProductTableName)
 }
 
 func (product *ProductTableModel) CreateProduct(ctx context.Context) (int, error) {
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("CreateProduct: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -119,10 +120,10 @@ func (product *ProductTableModel) CreateProduct(ctx context.Context) (int, error
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
 
-	return db.NoSQLClient.InsertOne(ctx, ProductTableName, *product)
+	return nosql.Client.InsertOne(ctx, ProductTableName, *product)
 }
 func (product *ProductTableModel) GetProductByID(ctx context.Context) (int, error) {
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("GetProductByID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -136,7 +137,7 @@ func (product *ProductTableModel) GetProductByID(ctx context.Context) (int, erro
 	}
 	var result ProductTableModel
 
-	if statusCode, err := db.NoSQLClient.FindOne(ctx, ProductTableName, whereClause, &result); err != nil {
+	if statusCode, err := nosql.Client.FindOne(ctx, ProductTableName, whereClause, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
 		logrus.Errorf("GetProductByID: %v\n", err)
 		return statusCode, err
@@ -147,7 +148,7 @@ func (product *ProductTableModel) GetProductByID(ctx context.Context) (int, erro
 }
 
 func (product *ProductTableModel) GetProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductTableModel, int, error) {
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("GetProductsByKeyWordsAndCategory: %v\n", err)
 		return nil, http.StatusInternalServerError, err
@@ -166,7 +167,7 @@ func (product *ProductTableModel) GetProductsByKeyWordsAndCategory(ctx context.C
 	}
 	var result []ProductTableModel
 
-	if statusCode, err := db.NoSQLClient.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
+	if statusCode, err := nosql.Client.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
 		logrus.Errorf("GetProductsByKeyWordsAndCategory: %v\n", err)
 		return nil, statusCode, err
@@ -175,7 +176,7 @@ func (product *ProductTableModel) GetProductsByKeyWordsAndCategory(ctx context.C
 }
 
 func (product *ProductTableModel) GetProductsBySellerID(ctx context.Context) ([]ProductTableModel, int, error) {
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("GetProductBySellerID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
@@ -189,7 +190,7 @@ func (product *ProductTableModel) GetProductsBySellerID(ctx context.Context) ([]
 	}
 	var result []ProductTableModel
 
-	if statusCode, err := db.NoSQLClient.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
+	if statusCode, err := nosql.Client.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
 		logrus.Errorf("GetProductsBySellerID: %v\n", err)
 		return nil, statusCode, err
@@ -197,7 +198,7 @@ func (product *ProductTableModel) GetProductsBySellerID(ctx context.Context) ([]
 	return result, http.StatusOK, nil
 }
 func (product *ProductTableModel) UpdateProductByID(ctx context.Context) (int, error) {
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("UpdateProductByID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -210,7 +211,7 @@ func (product *ProductTableModel) UpdateProductByID(ctx context.Context) (int, e
 		},
 	}
 	product.UpdatedAt = time.Now()
-	if statusCode, err := db.NoSQLClient.UpdateOne(ctx, ProductTableName, whereClause, *product); err != nil {
+	if statusCode, err := nosql.Client.UpdateOne(ctx, ProductTableName, whereClause, *product); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
 		logrus.Errorf("GetProductBySellerID: %v\n", err)
 		return statusCode, err
@@ -218,7 +219,7 @@ func (product *ProductTableModel) UpdateProductByID(ctx context.Context) (int, e
 	return http.StatusOK, nil
 }
 func (product *ProductTableModel) DeleteProductByID(ctx context.Context) (int, error) {
-	if err := db.VerifyNOSQLDatabaseConnection(ctx, db.NoSQLClient); err != nil {
+	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
 		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
 		logrus.Errorf("DeleteProductByID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -231,7 +232,7 @@ func (product *ProductTableModel) DeleteProductByID(ctx context.Context) (int, e
 		},
 	}
 	product.UpdatedAt = time.Now()
-	if statusCode, err := db.NoSQLClient.DeleteOne(ctx, ProductTableName, whereClause); err != nil {
+	if statusCode, err := nosql.Client.DeleteOne(ctx, ProductTableName, whereClause); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
 		logrus.Errorf("DeleteProductByID: %v\n", err)
 		return statusCode, err

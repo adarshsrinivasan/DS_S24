@@ -18,6 +18,7 @@ type SellerModel struct {
 	NumberOfItemsSold  int       `json:"numberOfItemsSold,omitempty" bson:"numberOfItemsSold" bun:"numberOfItemsSold"`
 	UserName           string    `json:"userName,omitempty" bson:"userName" bun:"userName,notnull,unique"`
 	Password           string    `json:"password,omitempty" bson:"password" bun:"password,notnull,unique"`
+	Version            int       `json:"version,omitempty" bson:"version" bun:"version,notnull"`
 	CreatedAt          time.Time `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
@@ -119,6 +120,7 @@ func convertSellerModelToSellerTableModel(ctx context.Context, sellerModel *Sell
 		NumberOfItemsSold:  sellerModel.NumberOfItemsSold,
 		UserName:           sellerModel.UserName,
 		Password:           sellerModel.Password,
+		Version:            sellerModel.Version,
 		CreatedAt:          sellerModel.CreatedAt,
 		UpdatedAt:          sellerModel.UpdatedAt,
 	}
@@ -133,6 +135,7 @@ func convertSellerTableModelToSellerModel(ctx context.Context, sellerTableModel 
 		NumberOfItemsSold:  sellerTableModel.NumberOfItemsSold,
 		UserName:           sellerTableModel.UserName,
 		Password:           sellerTableModel.Password,
+		Version:            sellerTableModel.Version,
 		CreatedAt:          sellerTableModel.CreatedAt,
 		UpdatedAt:          sellerTableModel.UpdatedAt,
 	}

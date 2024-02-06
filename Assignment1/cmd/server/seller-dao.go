@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/sql"
 	"net/http"
 	"reflect"
 	"time"
@@ -34,25 +35,24 @@ type SellerTableModel struct {
 	NumberOfItemsSold  int       `json:"numberOfItemsSold" bson:"numberOfItemsSold" bun:"numberOfItemsSold"`
 	UserName           string    `json:"userName" bson:"userName" bun:"userName,notnull,unique"`
 	Password           string    `json:"password" bson:"password" bun:"password,notnull,unique"`
+	Version            int       `json:"version" bson:"version" bun:"version,notnull"`
 	CreatedAt          time.Time `json:"createdAt"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt" bson:"updatedAt" bun:"updatedAt"`
 }
 
 func CreateSellerTable(ctx context.Context) error {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", SellerTableName, err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSellerTable: %v\n", err)
 		return err
 	}
+	defer client.Close(ctx)
 
 	tableSchemaPtr := reflect.New(reflect.TypeOf(SellerTableModel{}))
-	createTableQuery := db.SqlDBClient.NewCreateTable().
-		Model(tableSchemaPtr.Interface()).
-		IfNotExists()
 
-	_, err := createTableQuery.Exec(ctx)
-	if err != nil {
-		err := fmt.Errorf("exception while creaiting event table %s. %v", err, SellerTableName)
+	if err := client.CreateTable(ctx, tableSchemaPtr.Interface(), SellerTableName, nil); err != nil {
+		err := fmt.Errorf("exception while creating table %s. %v", err, SellerTableName)
 		logrus.Errorf("CreateSellerTable: %v\n", err)
 		return err
 	}
@@ -61,23 +61,26 @@ func CreateSellerTable(ctx context.Context) error {
 }
 
 func (seller *SellerTableModel) CreateSeller(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("CreateSeller: %v\n", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		logrus.Errorf("CreateSellerTable: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 
 	seller.Id = uuid.New().String()
+	seller.Version = 0
 	seller.CreatedAt = time.Now()
 	seller.UpdatedAt = time.Now()
 
-	if existingSeller, _, _ := seller.getBySellerUserName(ctx); existingSeller != nil && existingSeller.UserName == seller.UserName {
+	if existingSeller, _, _ := seller.getByColumn(ctx, "userName", seller.UserName); existingSeller != nil && existingSeller.UserName == seller.UserName {
 		err := fmt.Errorf("exception while verifying Seller data. userName alredy taken")
 		logrus.Errorf("CreateSeller: %v\n", err)
 		return http.StatusBadRequest, err
 	}
 
-	if _, err := db.SqlDBClient.NewInsert().Model(seller).Exec(ctx); err != nil {
+	if err := client.Insert(ctx, seller, SellerTableName); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Insert", SellerTableName, err)
 		logrus.Errorf("CreateSeller: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -92,13 +95,7 @@ func (seller *SellerTableModel) GetSellerByID(ctx context.Context) (int, error) 
 		err          error
 	)
 
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("Logout: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-
-	if existingUser, _, err = seller.getBySellerID(ctx); err != nil || existingUser.Id != seller.Id {
+	if existingUser, _, err = seller.getByColumn(ctx, "id", seller.Id); err != nil || existingUser.Id != seller.Id {
 		err := fmt.Errorf("unable to find user with with id: %s. %v", seller.Id, err)
 		logrus.Errorf("fetchSellerWithSessionID: %v\n", err)
 		return http.StatusBadRequest, err
@@ -115,13 +112,7 @@ func (seller *SellerTableModel) GetSellerByUserName(ctx context.Context) (int, e
 		err          error
 	)
 
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("GetSellerByUserName: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-
-	if existingUser, _, err = seller.getBySellerUserName(ctx); err != nil || existingUser.UserName != seller.UserName {
+	if existingUser, _, err = seller.getByColumn(ctx, "userName", seller.UserName); err != nil || existingUser.UserName != seller.UserName {
 		err := fmt.Errorf("unable to find user with with userName: %s. %v", seller.UserName, err)
 		logrus.Errorf("GetSellerByUserName: %v\n", err)
 		return http.StatusBadRequest, err
@@ -133,17 +124,16 @@ func (seller *SellerTableModel) GetSellerByUserName(ctx context.Context) (int, e
 }
 
 func (seller *SellerTableModel) UpdateSellerByID(ctx context.Context) (int, error) {
-	if err = db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("UpdateBuyerByID: %v\n", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		logrus.Errorf("UpdateSellerByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 	seller.UpdatedAt = time.Now()
-	oldVersion := 0
-	updateQuery := db.PrepareUpdateQuery(ctx, &oldVersion, seller, false, true)
-	logrus.Infof("UpdateBuyerByID: Update query: %v", updateQuery.String())
-	_, err := updateQuery.Exec(ctx)
-	if err != nil {
+
+	if err := client.Update(ctx, seller, SellerTableName, true); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Update", SellerTableName, err)
 		logrus.Errorf("UpdateBuyerByID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -153,11 +143,13 @@ func (seller *SellerTableModel) UpdateSellerByID(ctx context.Context) (int, erro
 }
 
 func (seller *SellerTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*SellerTableModel, int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("getByColumn: %v\n", err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		logrus.Errorf("UpdateSellerByID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 	whereClause := []db.WhereClauseType{
 		{
 			ColumnName:   columnName,
@@ -166,41 +158,12 @@ func (seller *SellerTableModel) getByColumn(ctx context.Context, columnName stri
 		},
 	}
 	resultSeller := SellerTableModel{}
-	_, statusCode, err := db.ReadUtil(ctx, SellerTableName, nil, whereClause, nil, nil, nil, true, &resultSeller)
-	if err != nil {
+	if _, err := client.Read(ctx, SellerTableName, nil, whereClause, nil, nil, nil, true, &resultSeller); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", SellerTableName, err)
-		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, statusCode, err
-	}
-	return &resultSeller, http.StatusOK, nil
-}
-
-func (seller *SellerTableModel) getBySellerUserName(ctx context.Context) (*SellerTableModel, int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
 		logrus.Errorf("getByColumn: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "userName",
-			RelationType: db.EQUAL,
-			ColumnValue:  seller.UserName,
-		},
-	}
-	resultSeller := SellerTableModel{}
-	_, statusCode, err := db.ReadUtil(ctx, SellerTableName, nil, whereClause, nil, nil, nil, true, &resultSeller)
-	if err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", SellerTableName, err)
-		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, statusCode, err
-	}
 	return &resultSeller, http.StatusOK, nil
-	//return seller.getByColumn(ctx, "userName", seller.UserName)
-}
-
-func (seller *SellerTableModel) getBySellerID(ctx context.Context) (*SellerTableModel, int, error) {
-	return seller.getByColumn(ctx, "id", seller.Id)
 }
 
 func copySellerObj(from, to *SellerTableModel) {
@@ -211,6 +174,7 @@ func copySellerObj(from, to *SellerTableModel) {
 	to.NumberOfItemsSold = from.NumberOfItemsSold
 	to.UserName = from.UserName
 	to.Password = from.Password
+	to.Version = from.Version
 	to.CreatedAt = from.CreatedAt
 	to.UpdatedAt = from.UpdatedAt
 }

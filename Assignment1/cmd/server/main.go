@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/nosql"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/sql"
 	"github.com/google/uuid"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -28,6 +30,7 @@ const (
 	ServiceName   = "server"
 	ServerHostEnv = "SERVER_HOST"
 	ServerPortEnv = "SERVER_PORT"
+	SQLSchemaName = "marketplace"
 )
 
 var (
@@ -39,12 +42,20 @@ var (
 
 func initializeSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeSQLDB: Initializating SQLDB...\n")
-	db.SqlDBClient, err = db.NewSQLClient(ctx, ServiceName)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
-		err = fmt.Errorf("exception while initializing SQLDB buyer. %v", err)
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("initializeSQLDB: %v\n", err)
 		return err
 	}
+	defer client.Close(ctx)
+
+	if err := client.Initialize(ctx, SQLSchemaName); err != nil {
+		err = fmt.Errorf("exception while initializing SQLDB client. %v", err)
+		logrus.Errorf("initializeSQLDB: %v\n", err)
+		return err
+	}
+
 	if err := CreateSellerTable(ctx); err != nil {
 		err = fmt.Errorf("exception while creating seller tabel. %v", err)
 		logrus.Errorf("initializeSQLDB: %v\n", err)
@@ -81,7 +92,7 @@ func initializeSQLDB(ctx context.Context) error {
 
 func initializeNOSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeNOSQLDB: Initializating NOSQLDB...\n")
-	db.NoSQLClient, err = db.NewNoSQLClient(ctx, ServiceName)
+	nosql.Client, err = nosql.NewNoSQLClient(ctx, ServiceName)
 	if err != nil {
 		err = fmt.Errorf("exception while initializing NOSQLDB buyer. %v", err)
 		logrus.Errorf("initializeNOSQLDB: %v\n", err)
@@ -126,60 +137,54 @@ func initialize() error {
 	return nil
 }
 
-func initialExchange(conn net.Conn) {
+func initialExchange(clientReader *bufio.Reader) error {
 	t := time.Now()
 	myTime := t.Format(time.RFC3339Nano)
-	clientMsg, err := bufio.NewReader(conn).ReadString('\n')
+	clientMsg, err := clientReader.ReadString('\n')
 	if err != nil {
-		return
+		return err
 	}
-	log.Println("Message from buyer at ", myTime, ": ", clientMsg)
-}
-
-func handleClient(conn net.Conn) {
-	if activeClients == nil {
-		activeClients = make(map[string]Client, 1000)
-	}
-	_, ok := activeClients[conn.RemoteAddr().String()]
-
-	if ok == false {
-		activeClients[conn.RemoteAddr().String()] = Client{
-			uid:  uuid.New(),
-			addr: conn.RemoteAddr().String(),
-		}
-	}
-	log.Printf("Client %s connected\n", conn.RemoteAddr().String())
+	log.Println("Message from client at ", myTime, ": ", clientMsg)
+	return nil
 }
 
 func handleConnection(conn net.Conn) {
 	defer func(conn net.Conn) {
 		_ = conn.Close()
-		delete(activeClients, conn.RemoteAddr().String())
 		log.Println("Client " + conn.RemoteAddr().String() + " disconnected")
 	}(conn)
 
 	warning := false
+	clientReader := bufio.NewReader(conn)
+
+	if err := initialExchange(clientReader); err != nil {
+		logrus.Errorf("Unable to read Client %s initial message. Logging out the user", conn.RemoteAddr().String())
+		common.RespondWithError(conn, http.StatusGatewayTimeout, "Timeout: Logging you out!\n")
+		return
+	}
+
 	for {
 		requestBody := make([]byte, 1000)
 		err := conn.SetDeadline(time.Now().Add(time.Minute * 4))
 
 		clientRequest := common.ClientRequest{}
-		_, err = conn.Read(requestBody)
+
+		_, err = clientReader.Read(requestBody)
 
 		if errors.Is(err, os.ErrDeadlineExceeded) {
 			log.Println("Warning: Sending a inactivity warning to the buyer")
 
 			_ = conn.SetDeadline(time.Now().Add(time.Minute))
 			warning = true
-			conn.Write([]byte("Session timeout warning: You will be automatically logged out in the next minute\n"))
+			common.RespondWithError(conn, http.StatusContinue, "Session timeout warning: You will be automatically logged out in the next minute\n")
 
-			_, err = conn.Read(requestBody)
+			_, err = clientReader.Read(requestBody)
 
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				if warning {
 					_ = conn.SetDeadline(time.Now().Add(time.Second * 10))
 					log.Printf("Client %s is inactive. Logging out the user\n", conn.RemoteAddr().String())
-					conn.Write([]byte("Timeout: Logging you out!\n"))
+					common.RespondWithError(conn, http.StatusGatewayTimeout, "Timeout: Logging you out!\n")
 					return
 				}
 			}
@@ -191,9 +196,9 @@ func handleConnection(conn net.Conn) {
 
 		t := time.Now()
 		myTime := t.Format(time.RFC3339Nano)
-		log.Println("Received request at", myTime)
 
 		clientRequest.DeserializeRequest(requestBody)
+		log.Printf("Received request: %s at: %v", clientRequest.String(), myTime)
 		if clientRequest.UserType == common.Seller {
 			listOfSellerHandlers(ctx, conn, clientRequest)
 		} else {
@@ -212,9 +217,11 @@ func main() {
 		logrus.Fatal("ERROR: Server listening failed.")
 	} else {
 		for {
-			conn, _ := l.Accept()
-			handleClient(conn)
-			initialExchange(conn)
+			conn, err := l.Accept()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 			go handleConnection(conn)
 		}
 	}

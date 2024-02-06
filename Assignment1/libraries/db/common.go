@@ -72,3 +72,10 @@ type WhereClauseType struct {
 	TableAlias   string
 	JsonOperator string
 }
+
+type ForeignKey struct {
+	ColumnName    string
+	SrcColumnName string
+	SrcTableName  string
+	CascadeDelete bool
+}

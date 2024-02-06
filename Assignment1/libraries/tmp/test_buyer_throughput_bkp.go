@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ServiceName   = "test_buyer"
+	ServiceName   = "test_latency"
 	ServerHostEnv = "SERVER_HOST"
 	ServerPortEnv = "SERVER_PORT"
 )
@@ -34,7 +34,7 @@ func initialBuyerExchange(conn net.Conn) {
 	conn.Write([]byte("Hi Server. I am a buyer: " + myTime))
 }
 
-func handleConcurrentMessagesFromServer(conn net.Conn) {
+func handleConcurrentMessagesFromServer(conn net.Conn, responseChannel chan bool) {
 	defer conn.Close()
 	for {
 		requestBody := make([]byte, 5000)
@@ -58,6 +58,8 @@ func handleConcurrentMessagesFromServer(conn net.Conn) {
 		if strings.HasPrefix(response.Message, "Timeout: ") {
 			log.Fatal(response.Message)
 		}
+		// Send a signal that the response is received
+		responseChannel <- true
 	}
 }
 
@@ -85,22 +87,6 @@ func createLoginPayload() ([]byte, error) {
 	return serializedPayload, nil
 }
 
-func createLogoutPayload() ([]byte, error) {
-	var payload []byte
-	requestPayload := common.ClientRequest{
-		SessionID: sessionID,
-		Service:   "2",
-		UserType:  common.Buyer,
-		Body:      payload,
-	}
-	var serializedPayload []byte
-	if serializedPayload, err = requestPayload.SerializeRequest(); err != nil {
-		logrus.Errorf("createLogoutPayload: exception when trying to create logout payload: %v", err)
-		return nil, err
-	}
-	return serializedPayload, nil
-}
-
 func main() {
 	//log.Println("Initializing test buyer ...")
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", httpServerHost, httpServerPort))
@@ -109,28 +95,35 @@ func main() {
 	}
 	defer conn.Close()
 
-	initialBuyerExchange(conn)
-	go handleConcurrentMessagesFromServer(conn)
+	responseChannel := make(chan bool)
 
-	var iterations int64 = 10
-	var average int64 = 0
-	for i := 0; i < int(iterations); i++ {
+	initialBuyerExchange(conn)
+	go handleConcurrentMessagesFromServer(conn, responseChannel)
+
+	var iterations1 int64 = 10
+	var iterations2 int64 = 1000
+	var average float64 = 0
+	for i := 0; i < int(iterations1); i++ {
 		var buffer []byte
 		start := time.Now()
-		if buffer, err = createLoginPayload(); err != nil {
-			logrus.Error(err)
-			break
+		for j := 0; j < int(iterations2); j++ {
+			if buffer, err = createLoginPayload(); err != nil {
+				logrus.Error(err)
+				break
+			}
+			//log.Println("Sending login buffer to server at ", time.Now().Format(time.RFC3339Nano))
+			conn.Write(buffer)
+			// wait for the response
+			<-responseChannel
 		}
 		duration := time.Since(start)
-		average += duration.Milliseconds()
+		timeMillisecond := duration.Milliseconds()
+		//fmt.Printf("%d\n\n", timeMillisecond)
+		average += (float64(iterations2) / float64(timeMillisecond/1000))
 
-		//log.Println("Sending login buffer to server at ", time.Now().Format(time.RFC3339Nano))
-		conn.Write(buffer)
-
-		time.Sleep(1 * time.Second)
 	}
 	defer conn.Close()
 
-	fmt.Printf("%f\n", float64(average/iterations))
+	fmt.Printf("%f\n", (average / float64(iterations1)))
 	//log.Fatal("Closing connection. Exiting...")
 }

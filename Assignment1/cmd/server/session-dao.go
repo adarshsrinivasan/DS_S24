@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/sql"
 	"net/http"
 	"reflect"
 	"time"
@@ -18,38 +19,36 @@ const (
 	SessionTableName = "session_data"
 )
 
-type SessionDBOps interface {
+type SessionTableOps interface {
 	CreateSession(ctx context.Context) (int, error)
 	GetSessionByID(ctx context.Context) (int, error)
 	GetSessionByUserID(ctx context.Context) (int, error)
 	DeleteSessionByID(ctx context.Context) (int, error)
 }
 
-type SessionDBModel struct {
+type SessionTableModel struct {
 	schema.BaseModel `bun:"table:session_data,alias:session"`
 	ID               string          `json:"id,omitempty" bson:"id" bun:"id,pk"`
 	UserID           string          `json:"userID,omitempty" bson:"userID" bun:"userID,notnull,unique"`
 	UserType         common.UserType `json:"userType,omitempty" bson:"userType"  bun:"userType,notnull"`
-	CreatedAt        time.Time       `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt,omitempty"`
-	UpdatedAt        time.Time       `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt,omitempty"`
+	Version          int             `json:"version" bson:"version" bun:"version,notnull"`
+	CreatedAt        time.Time       `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
+	UpdatedAt        time.Time       `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
 
 func CreateSessionTable(ctx context.Context) error {
-
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", SessionTableName, err)
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSessionTable: %v\n", err)
 		return err
 	}
+	defer client.Close(ctx)
 
-	tableSchemaPtr := reflect.New(reflect.TypeOf(SessionDBModel{}))
-	createTableQuery := db.SqlDBClient.NewCreateTable().
-		Model(tableSchemaPtr.Interface()).
-		IfNotExists()
+	tableSchemaPtr := reflect.New(reflect.TypeOf(SessionTableModel{}))
 
-	_, err := createTableQuery.Exec(ctx)
-	if err != nil {
-		err := fmt.Errorf("exception while creaiting event table %s. %v", err, SessionTableName)
+	if err := client.CreateTable(ctx, tableSchemaPtr.Interface(), SessionTableName, nil); err != nil {
+		err := fmt.Errorf("exception while creating table %s. %v", err, SessionTableName)
 		logrus.Errorf("CreateSessionTable: %v\n", err)
 		return err
 	}
@@ -57,18 +56,21 @@ func CreateSessionTable(ctx context.Context) error {
 	return nil
 }
 
-func (session *SessionDBModel) CreateSession(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+func (session *SessionTableModel) CreateSession(ctx context.Context) (int, error) {
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSession: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 
 	session.ID = uuid.New().String()
+	session.Version = 0
 	session.CreatedAt = time.Now()
 	session.UpdatedAt = time.Now()
 
-	if _, err := db.SqlDBClient.NewInsert().Model(session).Exec(ctx); err != nil {
+	if err := client.Insert(ctx, session, SessionTableName); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Insert", SessionTableName, err)
 		logrus.Errorf("CreateSession: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -77,14 +79,9 @@ func (session *SessionDBModel) CreateSession(ctx context.Context) (int, error) {
 	return http.StatusOK, nil
 }
 
-func (session *SessionDBModel) GetSessionByID(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("GetSessionByID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
+func (session *SessionTableModel) GetSessionByID(ctx context.Context) (int, error) {
 	var (
-		existingSession *SessionDBModel
+		existingSession *SessionTableModel
 		err             error
 	)
 
@@ -93,23 +90,14 @@ func (session *SessionDBModel) GetSessionByID(ctx context.Context) (int, error) 
 		logrus.Errorf("GetSessionByID: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	session.ID = existingSession.ID
-	session.UserID = existingSession.UserID
-	session.UserType = existingSession.UserType
-	session.CreatedAt = existingSession.CreatedAt
-	session.UpdatedAt = existingSession.UpdatedAt
+	copySessionObj(existingSession, session)
 
 	return http.StatusOK, nil
 }
 
-func (session *SessionDBModel) GetSessionByUserID(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("GetSessionByUserID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
+func (session *SessionTableModel) GetSessionByUserID(ctx context.Context) (int, error) {
 	var (
-		existingSession *SessionDBModel
+		existingSession *SessionTableModel
 		err             error
 	)
 
@@ -118,21 +106,19 @@ func (session *SessionDBModel) GetSessionByUserID(ctx context.Context) (int, err
 		logrus.Errorf("GetSessionByUserID: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	session.ID = existingSession.ID
-	session.UserID = existingSession.UserID
-	session.UserType = existingSession.UserType
-	session.CreatedAt = existingSession.CreatedAt
-	session.UpdatedAt = existingSession.UpdatedAt
+	copySessionObj(existingSession, session)
 
 	return http.StatusOK, nil
 }
 
-func (session *SessionDBModel) DeleteSessionByID(ctx context.Context) (int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
+func (session *SessionTableModel) DeleteSessionByID(ctx context.Context) (int, error) {
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteSessionByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 	whereClauses := []db.WhereClauseType{
 		{
 			ColumnName:   "id",
@@ -141,19 +127,7 @@ func (session *SessionDBModel) DeleteSessionByID(ctx context.Context) (int, erro
 		},
 	}
 
-	deleteQuery := db.SqlDBClient.NewDelete().
-		Model(session)
-
-	// prepare whereClause.
-	queryStr, vals, err := db.CreateWhereClause(ctx, whereClauses)
-	if err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", SessionTableName, err)
-		logrus.Errorf("DeleteSessionByID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-	deleteQuery = deleteQuery.Where(queryStr, vals...)
-
-	if _, err := deleteQuery.Exec(ctx); err != nil {
+	if err := client.Delete(ctx, session, SessionTableName, whereClauses); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", SessionTableName, err)
 		logrus.Errorf("DeleteSessionByID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -161,12 +135,14 @@ func (session *SessionDBModel) DeleteSessionByID(ctx context.Context) (int, erro
 	return http.StatusOK, nil
 }
 
-func (session *SessionDBModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*SessionDBModel, int, error) {
-	if err := db.VerifySQLDatabaseConnection(ctx, db.SqlDBClient); err != nil {
-		err := fmt.Errorf("exception while verifying DB connection. %v", err)
-		logrus.Errorf("getByColumn: %v\n", err)
+func (session *SessionTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*SessionTableModel, int, error) {
+	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	if err != nil {
+		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		logrus.Errorf("DeleteSessionByID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
+	defer client.Close(ctx)
 	whereClause := []db.WhereClauseType{
 		{
 			ColumnName:   columnName,
@@ -174,12 +150,21 @@ func (session *SessionDBModel) getByColumn(ctx context.Context, columnName strin
 			ColumnValue:  columnValue,
 		},
 	}
-	resultSession := SessionDBModel{}
-	_, statusCode, err := db.ReadUtil(ctx, SessionTableName, nil, whereClause, nil, nil, nil, true, &resultSession)
-	if err != nil {
+	resultSession := SessionTableModel{}
+
+	if _, err := client.Read(ctx, SessionTableName, nil, whereClause, nil, nil, nil, true, &resultSession); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartTableName, err)
 		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, statusCode, err
+		return nil, http.StatusInternalServerError, err
 	}
 	return &resultSession, http.StatusOK, nil
+}
+
+func copySessionObj(from, to *SessionTableModel) {
+	to.ID = from.ID
+	to.UserID = from.UserID
+	to.UserType = from.UserType
+	to.Version = from.Version
+	to.CreatedAt = from.CreatedAt
+	to.UpdatedAt = from.UpdatedAt
 }

@@ -14,6 +14,7 @@ type CartModel struct {
 	Saved      bool            `json:"saved,omitempty" bson:"saved" bun:"saved,notnull"`
 	Items      []CartItemModel `json:"items,omitempty" bson:"items"`
 	TotalPrice float32         `json:"totalPrice,omitempty" bson:"totalPrice,omitempty" bun:"totalPrice,notnull"`
+	Version    int             `json:"version,omitempty" bson:"version" bun:"version,notnull"`
 	CreatedAt  time.Time       `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt  time.Time       `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
@@ -25,6 +26,7 @@ type CartItemModel struct {
 	SellerID  string    `json:"sellerID,omitempty" bson:"sellerID" bun:"sellerID,notnull"`
 	Quantity  int       `json:"quantity,omitempty" bson:"quantity" bun:"quantity,notnull"`
 	Price     float32   `json:"price,omitempty" bson:"price,omitempty" bun:"price,notnull"`
+	Version   int       `json:"version,omitempty" bson:"version" bun:"version,notnull"`
 	CreatedAt time.Time `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
@@ -194,6 +196,7 @@ func buildCartModel(cartTableModel *CartTableModel, cartItemTableModelList []Car
 		Saved:      cartTableModel.Saved,
 		Items:      make([]CartItemModel, 0),
 		TotalPrice: 0,
+		Version:    cartTableModel.Version,
 		CreatedAt:  cartTableModel.CreatedAt,
 		UpdatedAt:  cartTableModel.UpdatedAt,
 	}
@@ -206,6 +209,7 @@ func buildCartModel(cartTableModel *CartTableModel, cartItemTableModelList []Car
 			SellerID:  cartItemTableModel.SellerID,
 			Quantity:  cartItemTableModel.Quantity,
 			Price:     cartItemTableModel.Price,
+			Version:   cartItemTableModel.Version,
 			CreatedAt: cartItemTableModel.CreatedAt,
 			UpdatedAt: cartItemTableModel.UpdatedAt,
 		}

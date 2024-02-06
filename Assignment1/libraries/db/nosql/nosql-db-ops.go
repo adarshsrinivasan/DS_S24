@@ -1,8 +1,9 @@
-package db
+package nosql
 
 import (
 	"context"
 	"fmt"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db"
 	"net/http"
 	"reflect"
 
@@ -15,10 +16,10 @@ import (
 )
 
 var (
-	NoSQLClient *Client
+	Client *clientObj
 )
 
-type Client struct {
+type clientObj struct {
 	client   *mongo.Client
 	dbClient *mongo.Database
 }
@@ -31,7 +32,7 @@ const (
 	MongoDbEnv       = "MONGO_DB"
 )
 
-func NewNoSQLClient(ctx context.Context, applicationName string) (*Client, error) {
+func NewNoSQLClient(ctx context.Context, applicationName string) (*clientObj, error) {
 	host := common.GetEnv(MongoHostEnv, "localhost")
 	port := common.GetEnv(MongoPortEnv, "27017")
 	username := common.GetEnv(MongoUsernameEnv, "admin")
@@ -60,14 +61,14 @@ func NewNoSQLClient(ctx context.Context, applicationName string) (*Client, error
 	}
 
 	//return buyer.Database(dbName).Collection(main.main.ProductTableName), nil
-	return &Client{
+	return &clientObj{
 		client:   client,
 		dbClient: client.Database(dbName),
 	}, nil
 
 }
 
-func VerifyNOSQLDatabaseConnection(ctx context.Context, client *Client) error {
+func VerifyNOSQLDatabaseConnection(ctx context.Context, client *clientObj) error {
 	if client.dbClient == nil || client.client == nil {
 		return fmt.Errorf("database connection not initialized")
 	}
@@ -79,7 +80,7 @@ func VerifyNOSQLDatabaseConnection(ctx context.Context, client *Client) error {
 	return nil
 }
 
-func (client *Client) CreateCollection(ctx context.Context, collectionName string) error {
+func (client *clientObj) CreateCollection(ctx context.Context, collectionName string) error {
 	if !client.isCollectionPresent(ctx, collectionName) {
 		if err := client.dbClient.CreateCollection(ctx, collectionName); err != nil {
 			err = fmt.Errorf("exception while creating collection in mongo DB: %v", err)
@@ -90,13 +91,13 @@ func (client *Client) CreateCollection(ctx context.Context, collectionName strin
 	return nil
 }
 
-func (client *Client) isCollectionPresent(ctx context.Context, collectionName string) bool {
+func (client *clientObj) isCollectionPresent(ctx context.Context, collectionName string) bool {
 	coll, _ := client.dbClient.ListCollectionNames(ctx, bson.D{{"name", collectionName}})
 	return len(coll) == 1
 }
 
 // InsertOne inserts a document into the specified collection.
-func (client *Client) InsertOne(ctx context.Context, collectionName string, document interface{}) (int, error) {
+func (client *clientObj) InsertOne(ctx context.Context, collectionName string, document interface{}) (int, error) {
 	collection := client.dbClient.Collection(collectionName)
 	_, err := collection.InsertOne(ctx, document)
 	if err != nil {
@@ -108,7 +109,7 @@ func (client *Client) InsertOne(ctx context.Context, collectionName string, docu
 }
 
 // FindOne finds a document in the specified collection based on the filter.
-func (client *Client) FindOne(ctx context.Context, collectionName string, whereClauses []WhereClauseType, result interface{}) (int, error) {
+func (client *clientObj) FindOne(ctx context.Context, collectionName string, whereClauses []db.WhereClauseType, result interface{}) (int, error) {
 	filter := whereClausesToFilter(whereClauses)
 	collection := client.dbClient.Collection(collectionName)
 	if err := collection.FindOne(ctx, filter).Decode(result); err != nil {
@@ -120,7 +121,7 @@ func (client *Client) FindOne(ctx context.Context, collectionName string, whereC
 }
 
 // FindMany finds documents in the specified collection based on the filter.
-func (client *Client) FindMany(ctx context.Context, collectionName string, whereClauses []WhereClauseType, result interface{}) (int, error) {
+func (client *clientObj) FindMany(ctx context.Context, collectionName string, whereClauses []db.WhereClauseType, result interface{}) (int, error) {
 	filter := whereClausesToFilter(whereClauses)
 	collection := client.dbClient.Collection(collectionName)
 	cursor, err := collection.Find(context.Background(), filter)
@@ -139,7 +140,7 @@ func (client *Client) FindMany(ctx context.Context, collectionName string, where
 }
 
 // UpdateOne updates a document in the specified collection based on the filter.
-func (client *Client) UpdateOne(ctx context.Context, collectionName string, whereClauses []WhereClauseType, data interface{}) (int, error) {
+func (client *clientObj) UpdateOne(ctx context.Context, collectionName string, whereClauses []db.WhereClauseType, data interface{}) (int, error) {
 	filter := whereClausesToFilter(whereClauses)
 
 	bsonDoc, _ := toDoc(data)
@@ -160,7 +161,7 @@ func (client *Client) UpdateOne(ctx context.Context, collectionName string, wher
 }
 
 // DeleteOne deletes a document from the specified collection based on the filter.
-func (client *Client) DeleteOne(ctx context.Context, collectionName string, whereClauses []WhereClauseType) (int, error) {
+func (client *clientObj) DeleteOne(ctx context.Context, collectionName string, whereClauses []db.WhereClauseType) (int, error) {
 	filter := whereClausesToFilter(whereClauses)
 	collection := client.dbClient.Collection(collectionName)
 	if _, err := collection.DeleteOne(ctx, filter); err != nil {
@@ -171,28 +172,28 @@ func (client *Client) DeleteOne(ctx context.Context, collectionName string, wher
 	return http.StatusOK, nil
 }
 
-func whereClausesToFilter(whereClauses []WhereClauseType) bson.D {
+func whereClausesToFilter(whereClauses []db.WhereClauseType) bson.D {
 	filter := bson.D{}
 
 	for _, wc := range whereClauses {
 		fieldName := wc.ColumnName
 
 		switch wc.RelationType {
-		case EQUAL:
+		case db.EQUAL:
 			filter = append(filter, bson.E{Key: fieldName, Value: wc.ColumnValue})
-		case NOT_EQUAL:
+		case db.NOT_EQUAL:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$ne", wc.ColumnValue}}})
-		case IN:
+		case db.IN:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$in", wc.ColumnValue}}})
-		case NOT_IN:
+		case db.NOT_IN:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$nin", wc.ColumnValue}}})
-		case IS:
+		case db.IS:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$exists", wc.ColumnValue != nil}}})
-		case LIKE:
+		case db.LIKE:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$regex", wc.ColumnValue}, {"$options", "i"}}})
-		case GT:
+		case db.GT:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$gt", wc.ColumnValue}}})
-		case LT:
+		case db.LT:
 			filter = append(filter, bson.E{Key: fieldName, Value: bson.D{{"$lt", wc.ColumnValue}}})
 		default:
 			// Unsupported relation type, ignore or handle accordingly

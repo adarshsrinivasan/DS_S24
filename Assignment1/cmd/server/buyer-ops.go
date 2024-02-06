@@ -15,6 +15,7 @@ type BuyerModel struct {
 	NumberOfItemsPurchased int       `json:"numberOfItemsPurchased,omitempty" bson:"numberOfItemsPurchased" bun:"numberOfItemsPurchased"`
 	UserName               string    `json:"userName,omitempty" bson:"userName" bun:"userName,notnull,unique"`
 	Password               string    `json:"password,omitempty" bson:"password" bun:"password,notnull,unique"`
+	Version                int       `json:"version,omitempty" bson:"version" bun:"version,notnull"`
 	CreatedAt              time.Time `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt              time.Time `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
@@ -332,6 +333,7 @@ func convertBuyerModelToBuyerTableModel(ctx context.Context, buyerModel *BuyerMo
 		NumberOfItemsPurchased: buyerModel.NumberOfItemsPurchased,
 		UserName:               buyerModel.UserName,
 		Password:               buyerModel.Password,
+		Version:                buyerModel.Version,
 		CreatedAt:              buyerModel.CreatedAt,
 		UpdatedAt:              buyerModel.UpdatedAt,
 	}
@@ -344,6 +346,7 @@ func convertBuyerTableModelToBuyerModel(ctx context.Context, buyerTableModel *Bu
 		NumberOfItemsPurchased: buyerTableModel.NumberOfItemsPurchased,
 		UserName:               buyerTableModel.UserName,
 		Password:               buyerTableModel.Password,
+		Version:                buyerTableModel.Version,
 		CreatedAt:              buyerTableModel.CreatedAt,
 		UpdatedAt:              buyerTableModel.UpdatedAt,
 	}

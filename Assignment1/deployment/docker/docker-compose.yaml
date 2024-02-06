@@ -8,11 +8,25 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: marketplace
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+
+  pgbouncer:
+    image: edoburu/pgbouncer
     ports:
       - "5432:5432"
-    volumes:
-      # Pass volume named mysql-data to mysql container
-      - postgresql-data:/var/lib/postgresql/data
+    depends_on:
+      - postgres
+    environment:
+      ADMIN_USERS: admin
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: marketplace
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 300
+      AUTH_TYPE: plain
 
   mongodb:
     image: mongo:latest
