@@ -10,34 +10,37 @@ import (
 )
 
 type connPool struct {
-	mu                    sync.Mutex
-	maxConns              int
-	numberOfActiveClients int
+	mu       sync.Mutex
+	clients  chan *clientObj
+	maxConns int
+}
+
+func (p *connPool) initialize(ctx context.Context, applicationName, schemaName string, maxConns int) error {
+	p.clients = make(chan *clientObj, maxConns)
+	p.maxConns = maxConns
+
+	for i := 0; i < maxConns; i++ {
+		client, err := newClient(ctx, applicationName, schemaName)
+		if err != nil {
+			err = fmt.Errorf("exception while creating new client: %v", err)
+			logrus.Errorf("initialize: %v", err)
+			return err
+		}
+		p.clients <- client
+	}
+	return nil
 }
 
 // getClient retrieves a free client from the pool.
-func (p *connPool) getClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+func (p *connPool) getClient(ctx context.Context) *clientObj {
 	for {
-		if p.numberOfActiveClients < p.maxConns {
-			client, err := newClient(ctx, applicationName, schemaName)
-			if err != nil {
-				err = fmt.Errorf("exception while creating new client: %v", err)
-				logrus.Errorf("getClient: %v", err)
-				return nil, err
-			}
-			p.mu.Lock()
-			p.numberOfActiveClients++
-			p.mu.Unlock()
-			return client, nil
-		} else {
-			logrus.Errorf("DB connection pool max capacity. Waiting for free connection")
+		select {
+		case client := <-p.clients:
+			return client
 		}
 	}
 }
 
-func (p *connPool) close(ctx context.Context, client *clientObj) error {
-	p.mu.Lock()
-	p.numberOfActiveClients--
-	p.mu.Unlock()
-	return client.bunClient.Close()
+func (p *connPool) close(ctx context.Context, client *clientObj) {
+	p.clients <- client
 }

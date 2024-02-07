@@ -49,12 +49,14 @@ var (
 func NewClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
 	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "500"))
 	if poolObj == nil {
-		poolObj = &connPool{
-			maxConns:              maxConn,
-			numberOfActiveClients: 0,
+		poolObj = &connPool{}
+		if err := poolObj.initialize(ctx, applicationName, schemaName, maxConn); err != nil {
+			err = fmt.Errorf("exception while initializing SQL connection pool. %v", err)
+			logrus.Errorf("NewClient: %v\n", err)
+			return nil, err
 		}
 	}
-	return poolObj.getClient(ctx, applicationName, schemaName)
+	return poolObj.getClient(ctx), nil
 }
 
 func newClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
@@ -63,7 +65,7 @@ func newClient(ctx context.Context, applicationName, schemaName string) (*client
 	username := common.GetEnv(PostgresUsernameEnv, "admin")
 	password := common.GetEnv(PostgresPasswordEnv, "admin")
 	dbName := common.GetEnv(PostgresDbEnv, "marketplace")
-	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "500"))
+	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "300"))
 
 	sqldb := sql.OpenDB(pgdriver.NewConnector(
 		pgdriver.WithDSN(fmt.Sprintf("postgres://%s:@%s:%s/%s?sslmode=disable", username, host, port, dbName)),
@@ -293,8 +295,8 @@ func (client *clientObj) Delete(ctx context.Context, model interface{}, tableNam
 	return nil
 }
 
-func (client *clientObj) Close(ctx context.Context) error {
-	return poolObj.close(ctx, client)
+func (client *clientObj) Close(ctx context.Context) {
+	poolObj.close(ctx, client)
 }
 
 func (client *clientObj) prepareForeignKeyQuery(foreignKeyObj db.ForeignKey) string {
