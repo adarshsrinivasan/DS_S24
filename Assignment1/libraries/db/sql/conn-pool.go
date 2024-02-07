@@ -20,7 +20,7 @@ func (p *connPool) initialize(ctx context.Context, applicationName, schemaName s
 	p.maxConns = maxConns
 
 	for i := 0; i < maxConns; i++ {
-		client, err := newClient(ctx, applicationName, schemaName)
+		client, err := NewClient(ctx, applicationName, schemaName)
 		if err != nil {
 			err = fmt.Errorf("exception while creating new client: %v", err)
 			logrus.Errorf("initialize: %v", err)

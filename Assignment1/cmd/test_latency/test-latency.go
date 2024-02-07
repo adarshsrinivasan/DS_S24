@@ -132,7 +132,7 @@ func main() {
 	user := 0
 	user, _ = strconv.Atoi(os.Args[2])
 
-	filePath := fmt.Sprintf("latency-test-%d-%s", threadCount, time.Now().Format(time.RFC3339))
+	filePath := fmt.Sprintf("latency-test-%d-%d-%s", user, threadCount, time.Now().Format(time.RFC3339))
 
 	// Write output to the file
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

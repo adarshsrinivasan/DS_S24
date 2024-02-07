@@ -46,7 +46,7 @@ var (
 	poolObj *connPool
 )
 
-func NewClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+func getClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
 	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "500"))
 	if poolObj == nil {
 		poolObj = &connPool{}
@@ -59,7 +59,7 @@ func NewClient(ctx context.Context, applicationName, schemaName string) (*client
 	return poolObj.getClient(ctx), nil
 }
 
-func newClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+func NewClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
 	host := common.GetEnv(PostgresHostEnv, "localhost")
 	port := common.GetEnv(PostgresPortEnv, "5432")
 	username := common.GetEnv(PostgresUsernameEnv, "admin")
