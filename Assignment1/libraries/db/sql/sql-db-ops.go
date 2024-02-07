@@ -31,8 +31,8 @@ const (
 	PostgresUsernameEnv = "POSTGRES_USERNAME"
 	PostgresPasswordEnv = "POSTGRES_PASSWORD"
 	PostgresDbEnv       = "POSTGRES_DB"
+	PostgresMaxConnEnv  = "POSTGRES_MAX_CONN"
 
-	DefaultPoolSize     = 100 // default connection pool size.
 	DefaultIdleTimeouts = -1  // never timeout/close an idle connection.
 	DefaultLogSlowQuery = 100 // log db queries slower than 100ms by default
 
@@ -40,7 +40,6 @@ const (
 	ReadTimeOut  = 5 * time.Second // time to wait for read to complete before exit
 	WriteTimeOut = 5 * time.Second // time to wait for write to complete before exit
 
-	MaxConnections = 1000 // maximum number of active connections to DB
 )
 
 var (
@@ -48,9 +47,10 @@ var (
 )
 
 func NewClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "500"))
 	if poolObj == nil {
 		poolObj = &connPool{
-			maxConns:              MaxConnections,
+			maxConns:              maxConn,
 			numberOfActiveClients: 0,
 		}
 	}
@@ -63,6 +63,7 @@ func newClient(ctx context.Context, applicationName, schemaName string) (*client
 	username := common.GetEnv(PostgresUsernameEnv, "admin")
 	password := common.GetEnv(PostgresPasswordEnv, "admin")
 	dbName := common.GetEnv(PostgresDbEnv, "marketplace")
+	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "500"))
 
 	sqldb := sql.OpenDB(pgdriver.NewConnector(
 		pgdriver.WithDSN(fmt.Sprintf("postgres://%s:@%s:%s/%s?sslmode=disable", username, host, port, dbName)),
@@ -75,8 +76,8 @@ func newClient(ctx context.Context, applicationName, schemaName string) (*client
 			"search_path": fmt.Sprintf("%s", schemaName),
 		})))
 	sqldb.SetConnMaxIdleTime(DefaultIdleTimeouts)
-	sqldb.SetMaxIdleConns(DefaultPoolSize)
-	sqldb.SetMaxOpenConns(DefaultPoolSize)
+	sqldb.SetMaxIdleConns(maxConn)
+	sqldb.SetMaxOpenConns(maxConn)
 
 	_, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		host, port, username, password, dbName))

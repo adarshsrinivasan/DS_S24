@@ -73,7 +73,7 @@ elif [ "$node_num" == "2" ]; then
   cd /local/repository/Assignment1/cmd/server/
   rm server-seller || true
   go build -o server-seller .
-  IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/server/server-seller
+  IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/server/server-seller
   echo "Server-Seller Launch Complete..."
 elif [ "$node_num" == "3" ]; then
   echo "Launching Server-Buyer..."
@@ -81,7 +81,7 @@ elif [ "$node_num" == "3" ]; then
   cd /local/repository/Assignment1/cmd/server/
   rm server-buyer || true
   go build -o server-buyer .
-  IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/server/server-buyer
+  IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/server/server-buyer
   echo "Server-Buyer Launch Complete..."
 elif [ "$node_num" == "4" ]; then
   echo "Launching Client-Seller..."
@@ -89,7 +89,7 @@ elif [ "$node_num" == "4" ]; then
   cd /local/repository/Assignment1/cmd/seller/
   rm client-seller || true
   go build -o client-seller .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/seller/client-seller
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/seller/client-seller
   echo "Client-Seller Launch Complete..."
 elif [ "$node_num" == "5" ]; then
   echo "Launching Client-Buyer..."
@@ -97,7 +97,7 @@ elif [ "$node_num" == "5" ]; then
   cd /local/repository/Assignment1/cmd/buyer/
   rm client-buyer || true
   go build -o client-buyer .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/buyer/client-buyer
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/buyer/client-buyer
   echo "Client-Buyer Launch Complete..."
 elif [ "$node_num" == "6" ]; then
   echo "Setting-up Test-Latency..."
@@ -105,12 +105,12 @@ elif [ "$node_num" == "6" ]; then
   cd /local/repository/Assignment1/cmd/test_latency/
   rm test-latency || true
   go build -o test-latency .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_latency/test-latency 2 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_latency/test-latency 20 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_latency/test-latency 100 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_latency/test-latency 2 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_latency/test-latency 20 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_latency/test-latency 100 1
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 2 0
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 20 0
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 100 0
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 2 1
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 20 1
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 100 1
   echo "Test-Latency Setup Complete..."
 elif [ "$node_num" == "7" ]; then
   echo "Setting-up Test-Throughput..."
@@ -118,12 +118,12 @@ elif [ "$node_num" == "7" ]; then
   cd /local/repository/Assignment1/cmd/test_throughput/
   rm test-throughput || true
   go build -o test-throughput .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_throughput/test-throughput 2 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_throughput/test-throughput 20 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_throughput/test-throughput 100 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_throughput/test-throughput 2 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_throughput/test-throughput 20 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace /local/repository/Assignment1/cmd/test_throughput/test-throughput 100 1
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 2 0
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 20 0
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 100 0
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 2 1
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 20 1
+  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 100 1
   echo "Testr-Throughput Setup Complete..."
 else
   echo "Invalid Node Number $node_num"
