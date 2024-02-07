@@ -295,8 +295,9 @@ func (client *clientObj) Delete(ctx context.Context, model interface{}, tableNam
 	return nil
 }
 
-func (client *clientObj) Close(ctx context.Context) {
-	poolObj.close(ctx, client)
+func (client *clientObj) Close(ctx context.Context) error {
+	//poolObj.close(ctx, client)
+	return client.bunClient.Close()
 }
 
 func (client *clientObj) prepareForeignKeyQuery(foreignKeyObj db.ForeignKey) string {
