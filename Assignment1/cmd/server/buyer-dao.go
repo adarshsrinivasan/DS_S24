@@ -56,7 +56,6 @@ func CreateBuyerTable(ctx context.Context) error {
 	}
 
 	buyer := BuyerTableModel{
-		BaseModel:              schema.BaseModel{},
 		Name:                   "admin",
 		NumberOfItemsPurchased: 0,
 		UserName:               "admin",
