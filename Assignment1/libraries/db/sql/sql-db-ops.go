@@ -39,9 +39,25 @@ const (
 	DialTimeOut  = 5 * time.Second // time to wait for connection before exit
 	ReadTimeOut  = 5 * time.Second // time to wait for read to complete before exit
 	WriteTimeOut = 5 * time.Second // time to wait for write to complete before exit
+
+	MaxConnections = 1000 // maximum number of active connections to DB
+)
+
+var (
+	poolObj *connPool
 )
 
 func NewClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+	if poolObj == nil {
+		poolObj = &connPool{
+			maxConns:              MaxConnections,
+			numberOfActiveClients: 0,
+		}
+	}
+	return poolObj.getClient(ctx, applicationName, schemaName)
+}
+
+func newClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
 	host := common.GetEnv(PostgresHostEnv, "localhost")
 	port := common.GetEnv(PostgresPortEnv, "5432")
 	username := common.GetEnv(PostgresUsernameEnv, "admin")
@@ -277,7 +293,7 @@ func (client *clientObj) Delete(ctx context.Context, model interface{}, tableNam
 }
 
 func (client *clientObj) Close(ctx context.Context) error {
-	return client.bunClient.Close()
+	return poolObj.close(ctx, client)
 }
 
 func (client *clientObj) prepareForeignKeyQuery(foreignKeyObj db.ForeignKey) string {

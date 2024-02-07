@@ -5,10 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/nosql"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/sql"
-	"github.com/google/uuid"
 	"log"
 	"net"
 	"net/http"
@@ -16,15 +12,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/nosql"
+	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/db/sql"
 	"github.com/sirupsen/logrus"
 )
-
-type Client struct {
-	uid  uuid.UUID
-	addr string
-}
-
-var activeClients map[string]Client
 
 const (
 	ServiceName   = "server"
