@@ -35,12 +35,12 @@ build-test-throughput:
 build-all: build-server-seller build-server-buyer build-client-seller build-client-buyer build-test-latency build-test-throughput
 
 run-postgres:
-	docker compose -f ../deployment/docker/docker-compose.yaml up -d postgres pgbouncer
-	docker compose -f ../deployment/docker/docker-compose.yaml ps
+	docker compose -f ./deployment/docker/docker-compose.yaml up -d postgres pgbouncer
+	docker compose -f ./deployment/docker/docker-compose.yaml ps
 
 run-mongo:
-	docker compose -f ../deployment/docker/docker-compose.yaml up -d mongodb
-	docker compose -f ../deployment/docker/docker-compose.yaml ps
+	docker compose -f ./deployment/docker/docker-compose.yaml up -d mongodb
+	docker compose -f ./deployment/docker/docker-compose.yaml ps
 
 run-server-seller: build-server-seller
 	./cmd/server/server-seller

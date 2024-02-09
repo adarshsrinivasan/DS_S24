@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/adarshsrinivasan/DS_S24/Assignment1/libraries/common"
 	"log"
 	"net"
 	"net/http"
+
+	"github.com/adarshsrinivasan/DS_S24/libraries/common"
 )
 
 func sellerCreateAccountHandler(ctx context.Context, conn net.Conn, r common.ClientRequest) {
