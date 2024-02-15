@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/nexidian/gocliselect"
 	"github.com/sirupsen/logrus"
 )
@@ -207,7 +207,7 @@ func userSellerOptions() ([]byte, error) {
 	requestPayload := common.ClientRequest{
 		SessionID: sessionID,
 		Service:   choice,
-		UserType:  common.Seller,
+		UserType:  common.SELLER,
 		Body:      body,
 	}
 

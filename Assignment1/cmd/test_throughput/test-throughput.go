@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -69,9 +69,9 @@ func createLoginPayload(user int) ([]byte, error) {
 	}
 	switch user {
 	case 1:
-		requestPayload.UserType = common.Seller
+		requestPayload.UserType = common.SELLER
 	default:
-		requestPayload.UserType = common.Buyer
+		requestPayload.UserType = common.BUYER
 	}
 	var serializedPayload []byte
 	if serializedPayload, err = requestPayload.SerializeRequest(); err != nil {

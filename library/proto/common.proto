@@ -1,0 +1,17 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/adarshsrinivasan/DS_S24/library/proto";
+
+message error {
+  string message = 2;
+}
+
+message InitializeRequest {
+  string ServiceName  = 1;
+  string SQLSchemaName  = 2;
+}
+
+message InitializeResponse {
+  proto.error err = 1;
+}

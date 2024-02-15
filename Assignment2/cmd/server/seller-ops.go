@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,19 +29,18 @@ func createSellerAccount(ctx context.Context, sellerModel *SellerModel) (SellerM
 		logrus.Errorf("createSellerAccount: %v\n", err)
 		return SellerModel{}, http.StatusBadRequest, err
 	}
-	sellerTableModelObj := convertSellerModelToSellerTableModel(ctx, sellerModel)
-	sellerTableModelObj.Id = ""
-	if statusCode, err := sellerTableModelObj.CreateSeller(ctx); err != nil {
+	sellerModel.Id = ""
+	if statusCode, err := sellerModel.CreateSeller(ctx); err != nil {
 		err := fmt.Errorf("exception while creating Seller. %v", err)
 		logrus.Errorf("createSellerAccount: %v\n", err)
 		return SellerModel{}, statusCode, err
 	}
-	createdSellerModel := convertSellerTableModelToSellerModel(ctx, sellerTableModelObj)
-	return *createdSellerModel, http.StatusOK, nil
+
+	return *sellerModel, http.StatusOK, nil
 }
 
 func sellerLogin(ctx context.Context, userName, password string) (string, int, error) {
-	sellerTableModelObj := SellerTableModel{UserName: userName}
+	sellerTableModelObj := SellerModel{UserName: userName}
 	if statusCode, err := sellerTableModelObj.GetSellerByUserName(ctx); err != nil {
 		err := fmt.Errorf("exception while fetching Seller by username %s. %v", userName, err)
 		logrus.Errorf("sellerLogin: %v\n", err)
@@ -54,7 +53,7 @@ func sellerLogin(ctx context.Context, userName, password string) (string, int, e
 		return "", http.StatusForbidden, err
 	}
 
-	return createNewSession(ctx, sellerTableModelObj.Id, common.Seller)
+	return createNewSession(ctx, sellerTableModelObj.Id, common.SELLER)
 }
 
 func sellerLogout(ctx context.Context, sessionID string) (int, error) {
@@ -76,7 +75,7 @@ func getSellerRating(ctx context.Context, sessionID string) (SellerModel, int, e
 		return SellerModel{}, statusCode, err
 	}
 
-	sellerTableModelObj := SellerTableModel{Id: userID}
+	sellerTableModelObj := SellerModel{Id: userID}
 	if statusCode, err := sellerTableModelObj.GetSellerByID(ctx); err != nil {
 		err := fmt.Errorf("exception while fetching Seller by userID %s. %v", userID, err)
 		logrus.Errorf("sellerLogin: %v\n", err)
@@ -90,8 +89,8 @@ func getSellerRating(ctx context.Context, sessionID string) (SellerModel, int, e
 }
 
 func incrementSellerRating(ctx context.Context, sellerID string) (int, error) {
-	sellerTableModelObj := SellerTableModel{Id: sellerID}
-	if statusCode, err := sellerTableModelObj.GetSellerByUserName(ctx); err != nil {
+	sellerTableModelObj := SellerModel{Id: sellerID}
+	if statusCode, err := sellerTableModelObj.GetSellerByID(ctx); err != nil {
 		err := fmt.Errorf("exception while fetching Seller by userID %s. %v", sellerID, err)
 		logrus.Errorf("sellerLogin: %v\n", err)
 		return statusCode, err
@@ -101,7 +100,7 @@ func incrementSellerRating(ctx context.Context, sellerID string) (int, error) {
 }
 
 func decrementSellerRating(ctx context.Context, sellerID string) (int, error) {
-	sellerTableModelObj := SellerTableModel{Id: sellerID}
+	sellerTableModelObj := SellerModel{Id: sellerID}
 	if statusCode, err := sellerTableModelObj.GetSellerByUserName(ctx); err != nil {
 		err := fmt.Errorf("exception while fetching Seller by userID %s. %v", sellerID, err)
 		logrus.Errorf("sellerLogin: %v\n", err)
@@ -111,34 +110,14 @@ func decrementSellerRating(ctx context.Context, sellerID string) (int, error) {
 	return sellerTableModelObj.UpdateSellerByID(ctx)
 }
 
-func convertSellerModelToSellerTableModel(ctx context.Context, sellerModel *SellerModel) *SellerTableModel {
-	return &SellerTableModel{
-		Id:                 sellerModel.Id,
-		Name:               sellerModel.Name,
-		FeedBackThumbsUp:   sellerModel.FeedBackThumbsUp,
-		FeedBackThumbsDown: sellerModel.FeedBackThumbsDown,
-		NumberOfItemsSold:  sellerModel.NumberOfItemsSold,
-		UserName:           sellerModel.UserName,
-		Password:           sellerModel.Password,
-		Version:            sellerModel.Version,
-		CreatedAt:          sellerModel.CreatedAt,
-		UpdatedAt:          sellerModel.UpdatedAt,
+func getSellerRatingBySellerID(ctx context.Context, sellerID string) (int, int, int, error) {
+	sellerTableModelObj := SellerModel{Id: sellerID}
+	if statusCode, err := sellerTableModelObj.GetSellerByID(ctx); err != nil {
+		err := fmt.Errorf("exception while fetching Seller by userID %s. %v", sellerID, err)
+		logrus.Errorf("getSellerRatingBySellerID: %v\n", err)
+		return -1, -1, statusCode, err
 	}
-}
-
-func convertSellerTableModelToSellerModel(ctx context.Context, sellerTableModel *SellerTableModel) *SellerModel {
-	return &SellerModel{
-		Id:                 sellerTableModel.Id,
-		Name:               sellerTableModel.Name,
-		FeedBackThumbsUp:   sellerTableModel.FeedBackThumbsUp,
-		FeedBackThumbsDown: sellerTableModel.FeedBackThumbsDown,
-		NumberOfItemsSold:  sellerTableModel.NumberOfItemsSold,
-		UserName:           sellerTableModel.UserName,
-		Password:           sellerTableModel.Password,
-		Version:            sellerTableModel.Version,
-		CreatedAt:          sellerTableModel.CreatedAt,
-		UpdatedAt:          sellerTableModel.UpdatedAt,
-	}
+	return sellerTableModelObj.FeedBackThumbsUp, sellerTableModelObj.FeedBackThumbsDown, http.StatusOK, nil
 }
 
 func validateSellerModel(ctx context.Context, sellerModel *SellerModel, create bool) error {

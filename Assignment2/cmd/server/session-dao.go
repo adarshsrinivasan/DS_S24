@@ -3,16 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"reflect"
-	"time"
-
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/sql"
-	"github.com/google/uuid"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
+	"github.com/adarshsrinivasan/DS_S24/library/proto"
 	"github.com/sirupsen/logrus"
-	"github.com/uptrace/bun/schema"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"net/http"
 )
 
 const (
@@ -26,108 +21,90 @@ type SessionTableOps interface {
 	DeleteSessionByID(ctx context.Context) (int, error)
 }
 
-type SessionTableModel struct {
-	schema.BaseModel `bun:"table:session_data,alias:session"`
-	ID               string          `json:"id,omitempty" bson:"id" bun:"id,pk"`
-	UserID   string          `json:"userID,omitempty" bson:"userID" bun:"userID,notnull,unique"`
-	UserType common.UserType `json:"userType,omitempty" bson:"userType"  bun:"userType,notnull"`
-	Version  int             `json:"version" bson:"version" bun:"version,notnull"`
-	CreatedAt        time.Time       `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
-	UpdatedAt        time.Time       `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
-}
-
-func CreateSessionTable(ctx context.Context) error {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
-	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
-		logrus.Errorf("CreateSessionTable: %v\n", err)
-		return err
+func (session *SessionModel) CreateSession(ctx context.Context) (int, error) {
+	protoModel := convertSessionModelToProtoSessionModel(ctx, session)
+	request := &proto.CreateSessionRequest{
+		RequestModel: protoModel,
 	}
-	defer client.Close(ctx)
-
-	tableSchemaPtr := reflect.New(reflect.TypeOf(SessionTableModel{}))
-
-	if err := client.CreateTable(ctx, tableSchemaPtr.Interface(), SessionTableName, nil); err != nil {
-		err := fmt.Errorf("exception while creating table %s. %v", err, SessionTableName)
-		logrus.Errorf("CreateSessionTable: %v\n", err)
-		return err
-	}
-
-	return nil
-}
-
-func (session *SessionTableModel) CreateSession(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("CreateSession: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	session.ID = uuid.New().String()
-	session.Version = 0
-	session.CreatedAt = time.Now()
-	session.UpdatedAt = time.Now()
-
-	if err := client.Insert(ctx, session, SessionTableName); err != nil {
+	response, err := sqlDBClient.CreateSession(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Insert", SessionTableName, err)
 		logrus.Errorf("CreateSession: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	logrus.Infof("CreateSession: Successfully created session for userID %s\n", session.UserID)
+	copySessionObj(response.ResponseModel, session)
+	logrus.Infof("CreateSession: Successfully created account for userID %s\n", session.UserID)
 	return http.StatusOK, nil
 }
 
-func (session *SessionTableModel) GetSessionByID(ctx context.Context) (int, error) {
-	var (
-		existingSession *SessionTableModel
-		err             error
-	)
-
-	if existingSession, _, err = session.getByColumn(ctx, "id", session.ID); err != nil || existingSession.ID != session.ID {
-		err := fmt.Errorf("unable to find session with with id: %s. %v", session.ID, err)
-		logrus.Errorf("GetSessionByID: %v\n", err)
-		return http.StatusBadRequest, err
+func (session *SessionModel) GetSessionByID(ctx context.Context) (int, error) {
+	protoModel := convertSessionModelToProtoSessionModel(ctx, session)
+	request := &proto.GetSessionByIDRequest{
+		RequestModel: protoModel,
 	}
-	copySessionObj(existingSession, session)
-
-	return http.StatusOK, nil
-}
-
-func (session *SessionTableModel) GetSessionByUserID(ctx context.Context) (int, error) {
-	var (
-		existingSession *SessionTableModel
-		err             error
-	)
-
-	if existingSession, _, err = session.getByColumn(ctx, "userID", session.UserID); err != nil || existingSession.UserID != session.UserID {
-		err := fmt.Errorf("unable to find session with with id: %s. %v", session.ID, err)
-		logrus.Errorf("GetSessionByUserID: %v\n", err)
-		return http.StatusBadRequest, err
-	}
-	copySessionObj(existingSession, session)
-
-	return http.StatusOK, nil
-}
-
-func (session *SessionTableModel) DeleteSessionByID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("GetSessionByID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	defer conn.Close()
+
+	response, err := sqlDBClient.GetSessionByID(ctx, request)
+	if err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", SessionTableName, err)
+		logrus.Errorf("GetSessionByID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	copySessionObj(response.ResponseModel, session)
+	return http.StatusOK, nil
+}
+
+func (session *SessionModel) GetSessionByUserID(ctx context.Context) (int, error) {
+	protoModel := convertSessionModelToProtoSessionModel(ctx, session)
+	request := &proto.GetSessionByUserIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("GetSessionByUserID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	defer conn.Close()
+
+	response, err := sqlDBClient.GetSessionByUserID(ctx, request)
+	if err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", SessionTableName, err)
+		logrus.Errorf("GetSessionByUserID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	copySessionObj(response.ResponseModel, session)
+	return http.StatusOK, nil
+}
+
+func (session *SessionModel) DeleteSessionByID(ctx context.Context) (int, error) {
+	protoModel := convertSessionModelToProtoSessionModel(ctx, session)
+	request := &proto.DeleteSessionByIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("DeleteSessionByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
-	whereClauses := []db.WhereClauseType{
-		{
-			ColumnName:   "id",
-			RelationType: db.EQUAL,
-			ColumnValue:  session.ID,
-		},
-	}
+	defer conn.Close()
 
-	if err := client.Delete(ctx, session, SessionTableName, whereClauses); err != nil {
+	if _, err := sqlDBClient.DeleteSessionByID(ctx, request); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", SessionTableName, err)
 		logrus.Errorf("DeleteSessionByID: %v\n", err)
 		return http.StatusInternalServerError, err
@@ -135,36 +112,22 @@ func (session *SessionTableModel) DeleteSessionByID(ctx context.Context) (int, e
 	return http.StatusOK, nil
 }
 
-func (session *SessionTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*SessionTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
-	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
-		logrus.Errorf("DeleteSessionByID: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
-	defer client.Close(ctx)
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   columnName,
-			RelationType: db.EQUAL,
-			ColumnValue:  columnValue,
-		},
-	}
-	resultSession := SessionTableModel{}
-
-	if _, err := client.Read(ctx, SessionTableName, nil, whereClause, nil, nil, nil, true, &resultSession); err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartTableName, err)
-		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
-	return &resultSession, http.StatusOK, nil
-}
-
-func copySessionObj(from, to *SessionTableModel) {
+func copySessionObj(from *proto.SessionModel, to *SessionModel) {
 	to.ID = from.ID
 	to.UserID = from.UserID
-	to.UserType = from.UserType
-	to.Version = from.Version
-	to.CreatedAt = from.CreatedAt
-	to.UpdatedAt = from.UpdatedAt
+	to.UserType = common.UserType(from.UserType)
+	to.Version = int(from.Version)
+	to.CreatedAt = from.CreatedAt.AsTime()
+	to.UpdatedAt = from.UpdatedAt.AsTime()
+}
+
+func convertSessionModelToProtoSessionModel(ctx context.Context, model *SessionModel) *proto.SessionModel {
+	return &proto.SessionModel{
+		ID:        model.ID,
+		UserID:    model.UserID,
+		UserType:  proto.USERTYPE(model.UserType),
+		Version:   int32(model.Version),
+		CreatedAt: timestamppb.New(model.CreatedAt),
+		UpdatedAt: timestamppb.New(model.CreatedAt),
+	}
 }

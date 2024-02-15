@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ func createProduct(ctx context.Context, productModel *ProductModel, sessionID st
 		return ProductModel{}, statusCode, err
 	}
 
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("createProduct: %v\n", err)
 		return ProductModel{}, http.StatusForbidden, err
@@ -45,20 +45,12 @@ func createProduct(ctx context.Context, productModel *ProductModel, sessionID st
 		return ProductModel{}, http.StatusBadRequest, err
 	}
 
-	if productModel.SellerID != userID {
-		err := fmt.Errorf("current user's ID %s does not match with Product's SellerID %s", userID, productModel.SellerID)
-		logrus.Errorf("createProduct: %v\n", err)
-		return ProductModel{}, http.StatusForbidden, err
-	}
-
-	productTableModel := convertProductModelToProductTableModel(productModel)
-	if statusCode, err := productTableModel.CreateProduct(ctx); err != nil {
+	if statusCode, err := productModel.CreateProduct(ctx); err != nil {
 		err = fmt.Errorf("exception while Creating Product for ID:%s. %v", productModel.ID, err)
 		logrus.Errorf("changeItemSalePrice: %v\n", err)
 		return ProductModel{}, statusCode, err
 	}
-	createdProduct := convertProductTableModelToProductModel(productTableModel)
-	return *createdProduct, http.StatusOK, nil
+	return *productModel, http.StatusOK, nil
 }
 
 func searchProduct(ctx context.Context, productModel *ProductModel) ([]ProductModel, int, error) {
@@ -70,34 +62,28 @@ func searchProduct(ctx context.Context, productModel *ProductModel) ([]ProductMo
 		}
 	}
 
-	productTableModel := convertProductModelToProductTableModel(productModel)
-	productTableModels, statusCode, err := productTableModel.GetProductsByKeyWordsAndCategory(ctx)
+	productModels, statusCode, err := productModel.ListProductsByKeyWordsAndCategory(ctx)
 	if err != nil {
 		err = fmt.Errorf("exception while fetching Products data: %v", err)
 		logrus.Errorf("searchProduct: %v\n", err)
 		return nil, statusCode, err
-	}
-	productModels := []ProductModel{}
-	for _, p := range productTableModels {
-		productModels = append(productModels, *convertProductTableModelToProductModel(&p))
 	}
 
 	return productModels, http.StatusOK, nil
 }
 
 func getProductByID(ctx context.Context, productID string) (ProductModel, int, error) {
-	productTableModel := ProductTableModel{ID: productID}
-	if statusCode, err := productTableModel.GetProductByID(ctx); err != nil {
+	productModel := ProductModel{ID: productID}
+	if statusCode, err := productModel.GetProductByID(ctx); err != nil {
 		err = fmt.Errorf("exception while fetching Product for ID:%s. %v", productID, err)
 		logrus.Errorf("getProductByID: %v\n", err)
 		return ProductModel{}, statusCode, err
 	}
-	fetchedProduct := convertProductTableModelToProductModel(&productTableModel)
-	return *fetchedProduct, http.StatusOK, nil
+	return productModel, http.StatusOK, nil
 }
 
 func changeItemSalePrice(ctx context.Context, productModel *ProductModel, sessionID string) (ProductModel, int, error) {
-	productTableModel := ProductTableModel{ID: productModel.ID}
+	productTableModel := ProductModel{ID: productModel.ID}
 	if statusCode, err := productTableModel.GetProductByID(ctx); err != nil {
 		err = fmt.Errorf("exception while fetching Product for ID:%s. %v", productModel.ID, err)
 		logrus.Errorf("changeItemSalePrice: %v\n", err)
@@ -111,7 +97,7 @@ func changeItemSalePrice(ctx context.Context, productModel *ProductModel, sessio
 		return ProductModel{}, statusCode, err
 	}
 
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("changeItemSalePrice: %v\n", err)
 		return ProductModel{}, http.StatusForbidden, err
@@ -129,12 +115,11 @@ func changeItemSalePrice(ctx context.Context, productModel *ProductModel, sessio
 		logrus.Errorf("changeItemSalePrice: %v\n", err)
 		return ProductModel{}, statusCode, err
 	}
-	updatedProduct := convertProductTableModelToProductModel(&productTableModel)
-	return *updatedProduct, http.StatusOK, nil
+	return productTableModel, http.StatusOK, nil
 }
 
 func removeItemFromSale(ctx context.Context, productModel *ProductModel, sessionID string) (ProductModel, int, error) {
-	productTableModel := ProductTableModel{ID: productModel.ID}
+	productTableModel := ProductModel{ID: productModel.ID}
 	if statusCode, err := productTableModel.GetProductByID(ctx); err != nil {
 		err = fmt.Errorf("exception while fetching Product for ID:%s. %v", productModel.ID, err)
 		logrus.Errorf("removeItemFromSale: %v\n", err)
@@ -148,7 +133,7 @@ func removeItemFromSale(ctx context.Context, productModel *ProductModel, session
 		return ProductModel{}, statusCode, err
 	}
 
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("removeItemFromSale: %v\n", err)
 		return ProductModel{}, http.StatusForbidden, err
@@ -167,6 +152,11 @@ func removeItemFromSale(ctx context.Context, productModel *ProductModel, session
 			logrus.Errorf("removeItemFromSale: %v\n", err)
 			return ProductModel{}, statusCode, err
 		}
+		if statusCode, err := deleteCartItemsByProductID(ctx, productTableModel.ID); err != nil {
+			err = fmt.Errorf("exception while Deleting Product ID:%s from CartItems table. %v", productModel.ID, err)
+			logrus.Errorf("removeItemFromSale: %v\n", err)
+			return ProductModel{}, statusCode, err
+		}
 	} else {
 		productTableModel.Quantity -= productModel.Quantity
 		if statusCode, err := productTableModel.UpdateProductByID(ctx); err != nil {
@@ -175,8 +165,7 @@ func removeItemFromSale(ctx context.Context, productModel *ProductModel, session
 			return ProductModel{}, statusCode, err
 		}
 	}
-	updatedProduct := convertProductTableModelToProductModel(&productTableModel)
-	return *updatedProduct, http.StatusOK, nil
+	return productTableModel, http.StatusOK, nil
 }
 
 func getSellerProducts(ctx context.Context, sessionID string) ([]ProductModel, int, error) {
@@ -186,28 +175,24 @@ func getSellerProducts(ctx context.Context, sessionID string) ([]ProductModel, i
 		logrus.Errorf("getSellerProducts: %v\n", err)
 		return nil, statusCode, err
 	}
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("getSellerProducts: %v\n", err)
 		return nil, http.StatusForbidden, err
 	}
-	productTableModel := ProductTableModel{SellerID: userID}
-	productTableModels, statusCode, err := productTableModel.GetProductsBySellerID(ctx)
+	productTableModel := ProductModel{SellerID: userID}
+	productModels, statusCode, err := productTableModel.ListProductsBySellerID(ctx)
 	if err != nil {
 		err = fmt.Errorf("exception while fetching Products data: %v", err)
 		logrus.Errorf("getSellerProducts: %v\n", err)
 		return nil, statusCode, err
-	}
-	productModels := []ProductModel{}
-	for _, p := range productTableModels {
-		productModels = append(productModels, *convertProductTableModelToProductModel(&p))
 	}
 
 	return productModels, http.StatusOK, nil
 }
 
 func incrementProductRating(ctx context.Context, productID string) (int, error) {
-	productTableModel := ProductTableModel{ID: productID}
+	productTableModel := ProductModel{ID: productID}
 	if statusCode, err := productTableModel.GetProductByID(ctx); err != nil {
 		err = fmt.Errorf("exception while fetching Product for ID:%s. %v", productID, err)
 		logrus.Errorf("incrementProductRating: %v\n", err)
@@ -228,7 +213,7 @@ func incrementProductRating(ctx context.Context, productID string) (int, error) 
 }
 
 func decrementProductRating(ctx context.Context, productID string) (int, error) {
-	productTableModel := ProductTableModel{ID: productID}
+	productTableModel := ProductModel{ID: productID}
 	if statusCode, err := productTableModel.GetProductByID(ctx); err != nil {
 		err = fmt.Errorf("exception while fetching Product for ID:%s. %v", productID, err)
 		logrus.Errorf("decrementProductRating: %v\n", err)
@@ -249,7 +234,7 @@ func decrementProductRating(ctx context.Context, productID string) (int, error) 
 }
 
 func getProductSellerRatingByProductID(ctx context.Context, productID string) (SellerModel, int, error) {
-	productTableModel := ProductTableModel{ID: productID}
+	productTableModel := ProductModel{ID: productID}
 	if statusCode, err := productTableModel.GetProductByID(ctx); err != nil {
 		err = fmt.Errorf("exception while fetching Product for ID:%s. %v", productID, err)
 		logrus.Errorf("getProductSellerRatingByProductID: %v\n", err)
@@ -266,40 +251,6 @@ func getProductSellerRatingByProductID(ctx context.Context, productID string) (S
 		FeedBackThumbsDown: thumbsDown,
 	}
 	return sellerModel, http.StatusOK, nil
-}
-
-func convertProductModelToProductTableModel(productModel *ProductModel) *ProductTableModel {
-	return &ProductTableModel{
-		ID:                 productModel.ID,
-		Name:               productModel.Name,
-		Category:           productModel.Category,
-		Keywords:           productModel.Keywords,
-		Condition:          productModel.Condition,
-		SalePrice:          productModel.SalePrice,
-		SellerID:           productModel.SellerID,
-		Quantity:           productModel.Quantity,
-		FeedBackThumbsUp:   productModel.FeedBackThumbsUp,
-		FeedBackThumbsDown: productModel.FeedBackThumbsDown,
-		CreatedAt:          productModel.CreatedAt,
-		UpdatedAt:          productModel.UpdatedAt,
-	}
-}
-
-func convertProductTableModelToProductModel(productTableModel *ProductTableModel) *ProductModel {
-	return &ProductModel{
-		ID:                 productTableModel.ID,
-		Name:               productTableModel.Name,
-		Category:           productTableModel.Category,
-		Keywords:           productTableModel.Keywords,
-		Condition:          productTableModel.Condition,
-		SalePrice:          productTableModel.SalePrice,
-		SellerID:           productTableModel.SellerID,
-		Quantity:           productTableModel.Quantity,
-		FeedBackThumbsUp:   productTableModel.FeedBackThumbsUp,
-		FeedBackThumbsDown: productTableModel.FeedBackThumbsDown,
-		CreatedAt:          productTableModel.CreatedAt,
-		UpdatedAt:          productTableModel.UpdatedAt,
-	}
 }
 
 func validateProductModel(ctx context.Context, productModel *ProductModel, create bool) error {

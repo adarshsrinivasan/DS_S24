@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 

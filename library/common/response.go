@@ -1,0 +1,133 @@
+package common
+
+import (
+	"bytes"
+	"encoding/gob"
+	"encoding/json"
+	"net"
+	"net/http"
+	"strconv"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+)
+
+type ClientResponse struct {
+	SessionID  string
+	StatusCode int
+	Message    string
+}
+
+func (req *ClientResponse) SerializeRequest() ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := gob.NewEncoder(&buffer)
+	err := encoder.Encode(req)
+	if err != nil {
+		log.Fatal("Encode error:", err)
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func (req *ClientResponse) DeserializeRequest(data []byte) error {
+	var buffer bytes.Buffer
+	buffer.Write(data)
+	decoder := gob.NewDecoder(&buffer)
+	if err := decoder.Decode(&req); err != nil {
+		log.Fatal("Decode error:", err)
+		return err
+	}
+	return nil
+}
+
+func (req *ClientResponse) LogResponse() {
+	if req.Message != "" {
+		log.Println("Code: " + strconv.Itoa(req.StatusCode) + " Body: " + req.Message)
+	} else {
+		log.Println("Code: " + strconv.Itoa(req.StatusCode))
+	}
+}
+
+func TCPRespondWithError(conn net.Conn, code int, message string) {
+	response := ClientResponse{
+		SessionID:  "",
+		StatusCode: code,
+		Message:    message,
+	}
+	var serializedPayload []byte
+	serializedPayload, _ = response.SerializeRequest()
+	conn.Write(serializedPayload)
+}
+
+func TCPRespondWithJSON(conn net.Conn, code int, sessionID string, message interface{}) {
+	body, _ := json.Marshal(message)
+	response := ClientResponse{
+		SessionID:  sessionID,
+		StatusCode: code,
+		Message:    string(body),
+	}
+	var serializedPayload []byte
+	serializedPayload, _ = response.SerializeRequest()
+	conn.Write(serializedPayload)
+}
+
+func TCPRespondWithStatusCode(conn net.Conn, code int, sessionID string) {
+	response := ClientResponse{
+		SessionID:  sessionID,
+		StatusCode: code,
+	}
+	var serializedPayload []byte
+	serializedPayload, _ = response.SerializeRequest()
+	conn.Write(serializedPayload)
+}
+
+func HTTPRespondWithError(w http.ResponseWriter, code int, message string) {
+	log.Errorf("respondWithError: %v", message)
+	HTTPRespondWithJSON(w, code, "", map[string]string{"error": message})
+}
+
+func HTTPRespondWithJSON(w http.ResponseWriter, code int, sessionID string, payload interface{}) {
+	response, _ := json.Marshal(payload)
+
+	if len(sessionID) > 0 {
+		w.Header().Set("User-Session-Id", sessionID)
+	}
+
+	w.Header().Set("Access-Control-Expose-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
+}
+
+func HTTPRespondWithStatusCode(w http.ResponseWriter, code int, headers map[string]string) {
+	if len(headers) > 0 {
+		for k, v := range headers {
+			w.Header().Set(k, v)
+		}
+	}
+	w.Header().Set("Access-Control-Expose-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.WriteHeader(code)
+}
+
+func RetryOnError(retryCount int, backOffTime time.Duration, fn func() error) error {
+	var err error
+	for attempt := 0; attempt < retryCount; attempt++ {
+		if err = fn(); err != nil {
+			log.Errorf("RetryOnError: attempt number: %d. Error: %v", attempt, err)
+		} else {
+			log.Infof("RetryOnError: attempt number: %d. successful!", attempt)
+			return nil
+		}
+		time.Sleep(backOffTime)
+		continue
+	}
+	return err
+}

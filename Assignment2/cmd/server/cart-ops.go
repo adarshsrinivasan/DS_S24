@@ -32,16 +32,8 @@ type CartItemModel struct {
 	UpdatedAt time.Time `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
 
-func createCart(ctx context.Context, buyerID string) (int, error) {
-	cartTableModel := CartTableModel{
-		BuyerID: buyerID,
-		Saved:   false,
-	}
-	return cartTableModel.CreateCart(ctx)
-}
-
 func getCartByID(ctx context.Context, cartID string) (*CartModel, int, error) {
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		ID: cartID,
 	}
 	if statusCode, err := cartTableModel.GetCartByID(ctx); err != nil {
@@ -49,7 +41,7 @@ func getCartByID(ctx context.Context, cartID string) (*CartModel, int, error) {
 		logrus.Errorf("getCartByID: %v\n", err)
 		return nil, statusCode, err
 	}
-	cartItemTableModel := CartItemTableModel{
+	cartItemTableModel := CartItemModel{
 		CartID: cartID,
 	}
 	cartItemTableModelList, statusCode, err := cartItemTableModel.ListCartItemByCartID(ctx)
@@ -69,12 +61,10 @@ func addProductToCart(ctx context.Context, cartItemModel *CartItemModel) (int, e
 		logrus.Errorf("addProductToCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	cartItemTableModel := CartItemTableModel{
+	cartItemTableModel := CartItemModel{
 		CartID:    cartItemModel.CartID,
 		ProductID: cartItemModel.ProductID,
-		SellerID:  cartItemModel.SellerID,
 		Quantity:  cartItemModel.Quantity,
-		Price:     cartItemModel.Price,
 	}
 	if statusCode, err := cartItemTableModel.CreateCartItem(ctx); err != nil {
 		err := fmt.Errorf("exception while Creating CartItems for ID %s. %v", cartItemModel.CartID, err)
@@ -91,7 +81,7 @@ func updateCartItemByCartIDAndProductID(ctx context.Context, cartItemModel *Cart
 		logrus.Errorf("addProductToCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	cartItemTableModel := CartItemTableModel{
+	cartItemTableModel := CartItemModel{
 		CartID:    cartItemModel.CartID,
 		ProductID: cartItemModel.ProductID,
 	}
@@ -101,7 +91,6 @@ func updateCartItemByCartIDAndProductID(ctx context.Context, cartItemModel *Cart
 		return statusCode, err
 	}
 	cartItemTableModel.Quantity = cartItemModel.Quantity
-	cartItemTableModel.Price = cartItemModel.Price
 	if statusCode, err := cartItemTableModel.UpdateCartItem(ctx); err != nil {
 		err := fmt.Errorf("exception while Updating CartItem with CartID %s. %v", cartItemTableModel.CartID, err)
 		logrus.Errorf("addProductToCart: %v\n", err)
@@ -111,27 +100,27 @@ func updateCartItemByCartIDAndProductID(ctx context.Context, cartItemModel *Cart
 	return http.StatusOK, nil
 }
 
-func removeProductToCart(ctx context.Context, cartItemModel *CartItemModel) (int, error) {
+func removeProductFromCart(ctx context.Context, cartItemModel *CartItemModel) (int, error) {
 	_, _, err := getCartByID(ctx, cartItemModel.CartID)
 	if err != nil {
 		err := fmt.Errorf("exception while fetching Cart with ID %s. %v", cartItemModel.CartID, err)
-		logrus.Errorf("removeProductToCart: %v\n", err)
+		logrus.Errorf("removeProductFromCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	existingCartItemModel := CartItemTableModel{
+	existingCartItemModel := CartItemModel{
 		CartID:    cartItemModel.CartID,
 		ProductID: cartItemModel.ProductID,
 	}
 	if statusCode, err := existingCartItemModel.GetCartItemByCartIDAndProductID(ctx); err != nil {
 		err := fmt.Errorf("exception while fetching CartItem with CartID %s. %v", existingCartItemModel.CartID, err)
-		logrus.Errorf("removeProductToCart: %v\n", err)
+		logrus.Errorf("removeProductFromCart: %v\n", err)
 		return statusCode, err
 	}
 	if existingCartItemModel.Quantity <= cartItemModel.Quantity {
-		logrus.Errorf("removeProductToCart: Removing CartItem %s from Cart %s.\n", existingCartItemModel.ID, existingCartItemModel.CartID)
+		logrus.Errorf("removeProductFromCart: Removing CartItem %s from Cart %s.\n", existingCartItemModel.ID, existingCartItemModel.CartID)
 		if statusCode, err := existingCartItemModel.DeleteCartItemByCartID(ctx); err != nil {
 			err := fmt.Errorf("exception while Deleting CartItem with CartID %s. %v", existingCartItemModel.CartID, err)
-			logrus.Errorf("removeProductToCart: %v\n", err)
+			logrus.Errorf("removeProductFromCart: %v\n", err)
 			return statusCode, err
 		}
 	} else {
@@ -139,7 +128,7 @@ func removeProductToCart(ctx context.Context, cartItemModel *CartItemModel) (int
 
 		if statusCode, err := existingCartItemModel.UpdateCartItem(ctx); err != nil {
 			err := fmt.Errorf("exception while Updating CartItem with CartID %s. %v", existingCartItemModel.CartID, err)
-			logrus.Errorf("removeProductToCart: %v\n", err)
+			logrus.Errorf("removeProductFromCart: %v\n", err)
 			return statusCode, err
 		}
 	}
@@ -147,7 +136,7 @@ func removeProductToCart(ctx context.Context, cartItemModel *CartItemModel) (int
 }
 
 func saveCart(ctx context.Context, cartID string) (int, error) {
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		ID: cartID,
 	}
 	if statusCode, err := cartTableModel.GetCartByID(ctx); err != nil {
@@ -159,7 +148,7 @@ func saveCart(ctx context.Context, cartID string) (int, error) {
 		cartTableModel.Saved = true
 		if statusCode, err := cartTableModel.UpdateCartByID(ctx); err != nil {
 			err := fmt.Errorf("exception while Updating Cart with ID %s. %v", cartTableModel.ID, err)
-			logrus.Errorf("removeProductToCart: %v\n", err)
+			logrus.Errorf("saveCart: %v\n", err)
 			return statusCode, err
 		}
 	}
@@ -167,7 +156,7 @@ func saveCart(ctx context.Context, cartID string) (int, error) {
 }
 
 func clearCart(ctx context.Context, cartID string) (int, error) {
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		ID: cartID,
 	}
 	if statusCode, err := cartTableModel.GetCartByID(ctx); err != nil {
@@ -175,7 +164,7 @@ func clearCart(ctx context.Context, cartID string) (int, error) {
 		logrus.Errorf("clearCart: %v\n", err)
 		return statusCode, err
 	}
-	cartItemTableModel := CartItemTableModel{CartID: cartID}
+	cartItemTableModel := CartItemModel{CartID: cartID}
 	if statusCode, err := cartItemTableModel.DeleteCartItemByCartID(ctx); err != nil {
 		err := fmt.Errorf("exception while Deleting CartItems with cartID %s. %v", cartItemTableModel.CartID, err)
 		logrus.Errorf("clearCart: %v\n", err)
@@ -190,7 +179,19 @@ func clearCart(ctx context.Context, cartID string) (int, error) {
 	return http.StatusOK, nil
 }
 
-func buildCartModel(cartTableModel *CartTableModel, cartItemTableModelList []CartItemTableModel) *CartModel {
+func deleteCartItemsByProductID(ctx context.Context, productID string) (int, error) {
+	cartItemTableModel := CartItemModel{
+		ProductID: productID,
+	}
+	if statusCode, err := cartItemTableModel.DeleteCartItemByProductID(ctx); err != nil {
+		err := fmt.Errorf("exception while Deleting CartItems by productID %s. %v", productID, err)
+		logrus.Errorf("deleteCartItemsByProductID: %v\n", err)
+		return statusCode, err
+	}
+	return http.StatusOK, nil
+}
+
+func buildCartModel(cartTableModel *CartModel, cartItemTableModelList []CartItemModel) *CartModel {
 	cartModel := &CartModel{
 		ID:         cartTableModel.ID,
 		BuyerID:    cartTableModel.BuyerID,
@@ -203,13 +204,19 @@ func buildCartModel(cartTableModel *CartTableModel, cartItemTableModelList []Car
 	}
 
 	for _, cartItemTableModel := range cartItemTableModelList {
+		product, _, err := getProductByID(ctx, cartItemTableModel.ProductID)
+		if err != nil {
+			err := fmt.Errorf("exception while fetching product with ID %s. %v", cartItemTableModel.ProductID, err)
+			logrus.Errorf("buildCartModel: %v\n", err)
+			continue
+		}
 		cartItemModel := CartItemModel{
 			ID:        cartItemTableModel.ID,
 			CartID:    cartItemTableModel.CartID,
 			ProductID: cartItemTableModel.ProductID,
-			SellerID:  cartItemTableModel.SellerID,
+			SellerID:  product.SellerID,
 			Quantity:  cartItemTableModel.Quantity,
-			Price:     cartItemTableModel.Price,
+			Price:     product.SalePrice * float32(cartItemTableModel.Quantity),
 			Version:   cartItemTableModel.Version,
 			CreatedAt: cartItemTableModel.CreatedAt,
 			UpdatedAt: cartItemTableModel.UpdatedAt,

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -60,7 +60,7 @@ func getTransactionListByBuyerID(ctx context.Context, sessionID string) ([]Trans
 		logrus.Errorf("getTransactionListByBuyerID: %v\n", err)
 		return nil, statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("getTransactionListByBuyerID: %v\n", err)
 		return nil, http.StatusBadRequest, err
@@ -91,7 +91,7 @@ func getTransactionListBySellerID(ctx context.Context, sessionID string) ([]Tran
 		logrus.Errorf("getTransactionListBySellerID: %v\n", err)
 		return nil, statusCode, err
 	}
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("getTransactionListBySellerID: %v\n", err)
 		return nil, http.StatusBadRequest, err

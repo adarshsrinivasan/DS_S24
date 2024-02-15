@@ -4,13 +4,23 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
+type SessionModel struct {
+	ID        string          `json:"id,omitempty" bson:"id" bun:"id,pk"`
+	UserID    string          `json:"userID,omitempty" bson:"userID" bun:"userID,notnull,unique"`
+	UserType  common.UserType `json:"userType,omitempty" bson:"userType"  bun:"userType,notnull"`
+	Version   int             `json:"version" bson:"version" bun:"version,notnull"`
+	CreatedAt time.Time       `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
+}
+
 func createNewSession(ctx context.Context, userID string, userType common.UserType) (string, int, error) {
-	sessionDBObj := SessionTableModel{UserID: userID, UserType: userType}
+	sessionDBObj := SessionModel{UserID: userID, UserType: userType}
 
 	if sessionID, _, err := getSessionByUserID(ctx, userID); err == nil {
 		return sessionID, http.StatusOK, nil
@@ -26,7 +36,7 @@ func createNewSession(ctx context.Context, userID string, userType common.UserTy
 }
 
 func getUserIDAndTypeFromSessionID(ctx context.Context, sessionID string) (string, common.UserType, int, error) {
-	sessionDBObj := SessionTableModel{ID: sessionID}
+	sessionDBObj := SessionModel{ID: sessionID}
 	statusCode, err := sessionDBObj.GetSessionByID(ctx)
 	if err != nil {
 		err := fmt.Errorf("exception while fetching session: %s. %v", sessionID, err)
@@ -37,7 +47,7 @@ func getUserIDAndTypeFromSessionID(ctx context.Context, sessionID string) (strin
 }
 
 func getSessionByUserID(ctx context.Context, userID string) (string, int, error) {
-	sessionDBObj := SessionTableModel{UserID: userID}
+	sessionDBObj := SessionModel{UserID: userID}
 	statusCode, err := sessionDBObj.GetSessionByUserID(ctx)
 	if err != nil {
 		err := fmt.Errorf("exception while fetching session by UserID: %s. %v", userID, err)
@@ -48,7 +58,7 @@ func getSessionByUserID(ctx context.Context, userID string) (string, int, error)
 }
 
 func deleteSessionByID(ctx context.Context, sessionID string) (int, error) {
-	sessionDBObj := SessionTableModel{ID: sessionID}
+	sessionDBObj := SessionModel{ID: sessionID}
 	return sessionDBObj.DeleteSessionByID(ctx)
 }
 

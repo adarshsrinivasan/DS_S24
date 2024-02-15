@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/db"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/sql"
+	"github.com/adarshsrinivasan/DS_S24/library/db"
+	"github.com/adarshsrinivasan/DS_S24/library/db/sql"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/uptrace/bun/schema"

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ func createProduct(ctx context.Context, productModel *ProductModel, sessionID st
 		return ProductModel{}, statusCode, err
 	}
 
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("createProduct: %v\n", err)
 		return ProductModel{}, http.StatusForbidden, err
@@ -71,7 +71,7 @@ func searchProduct(ctx context.Context, productModel *ProductModel) ([]ProductMo
 	}
 
 	productTableModel := convertProductModelToProductTableModel(productModel)
-	productTableModels, statusCode, err := productTableModel.GetProductsByKeyWordsAndCategory(ctx)
+	productTableModels, statusCode, err := productTableModel.ListProductsByKeyWordsAndCategory(ctx)
 	if err != nil {
 		err = fmt.Errorf("exception while fetching Products data: %v", err)
 		logrus.Errorf("searchProduct: %v\n", err)
@@ -111,7 +111,7 @@ func changeItemSalePrice(ctx context.Context, productModel *ProductModel, sessio
 		return ProductModel{}, statusCode, err
 	}
 
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("changeItemSalePrice: %v\n", err)
 		return ProductModel{}, http.StatusForbidden, err
@@ -148,7 +148,7 @@ func removeItemFromSale(ctx context.Context, productModel *ProductModel, session
 		return ProductModel{}, statusCode, err
 	}
 
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("removeItemFromSale: %v\n", err)
 		return ProductModel{}, http.StatusForbidden, err
@@ -186,13 +186,13 @@ func getSellerProducts(ctx context.Context, sessionID string) ([]ProductModel, i
 		logrus.Errorf("getSellerProducts: %v\n", err)
 		return nil, statusCode, err
 	}
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("provided userID is not a seller %s", userID)
 		logrus.Errorf("getSellerProducts: %v\n", err)
 		return nil, http.StatusForbidden, err
 	}
 	productTableModel := ProductTableModel{SellerID: userID}
-	productTableModels, statusCode, err := productTableModel.GetProductsBySellerID(ctx)
+	productTableModels, statusCode, err := productTableModel.ListProductsBySellerID(ctx)
 	if err != nil {
 		err = fmt.Errorf("exception while fetching Products data: %v", err)
 		logrus.Errorf("getSellerProducts: %v\n", err)

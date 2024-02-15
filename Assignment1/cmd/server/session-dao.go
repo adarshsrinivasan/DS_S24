@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/sql"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
+	"github.com/adarshsrinivasan/DS_S24/library/db"
+	"github.com/adarshsrinivasan/DS_S24/library/db/sql"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/uptrace/bun/schema"
@@ -29,9 +29,9 @@ type SessionTableOps interface {
 type SessionTableModel struct {
 	schema.BaseModel `bun:"table:session_data,alias:session"`
 	ID               string          `json:"id,omitempty" bson:"id" bun:"id,pk"`
-	UserID   string          `json:"userID,omitempty" bson:"userID" bun:"userID,notnull,unique"`
-	UserType common.UserType `json:"userType,omitempty" bson:"userType"  bun:"userType,notnull"`
-	Version  int             `json:"version" bson:"version" bun:"version,notnull"`
+	UserID           string          `json:"userID,omitempty" bson:"userID" bun:"userID,notnull,unique"`
+	UserType         common.UserType `json:"userType,omitempty" bson:"userType"  bun:"userType,notnull"`
+	Version          int             `json:"version" bson:"version" bun:"version,notnull"`
 	CreatedAt        time.Time       `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt        time.Time       `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }

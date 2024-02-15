@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,7 +54,7 @@ func sellerLogin(ctx context.Context, userName, password string) (string, int, e
 		return "", http.StatusForbidden, err
 	}
 
-	return createNewSession(ctx, sellerTableModelObj.Id, common.Seller)
+	return createNewSession(ctx, sellerTableModelObj.Id, common.SELLER)
 }
 
 func sellerLogout(ctx context.Context, sessionID string) (int, error) {

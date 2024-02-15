@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
-
-	"github.com/adarshsrinivasan/DS_S24/libraries/db"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/nosql"
-	"github.com/google/uuid"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
+	"github.com/adarshsrinivasan/DS_S24/library/proto"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"net/http"
 )
 
 const (
@@ -74,185 +72,203 @@ var StringToCondition = map[string]CONDITION{
 	"USED": USED,
 }
 
-type ProductTableModel struct {
-	ID                 string    `json:"id" bson:"_id,omitempty"`
-	Name               string    `json:"name" bson:"name,omitempty"`
-	Category           CATEGORY  `json:"category" bson:"category,omitempty"`
-	Keywords           []string  `json:"keywords" bson:"keywords,omitempty"`
-	Condition          CONDITION `json:"condition" bson:"condition,omitempty"`
-	SalePrice          float32   `json:"salePrice" bson:"salePrice,omitempty"`
-	SellerID           string    `json:"sellerID" bson:"sellerID,omitempty"`
-	Quantity           int       `json:"quantity" bson:"quantity"`
-	FeedBackThumbsUp   int       `json:"feedBackThumbsUp" bson:"feedBackThumbsUp"`
-	FeedBackThumbsDown int       `json:"feedBackThumbsDown" bson:"feedBackThumbsDown"`
-	CreatedAt          time.Time `json:"createdAt"  bson:"createdAt,omitempty"`
-	UpdatedAt          time.Time `json:"updatedAt" bson:"updatedAt,omitempty"`
-}
-
 type ProductTableOps interface {
 	CreateProduct(ctx context.Context) (int, error)
 	GetProductByID(ctx context.Context) (int, error)
-	GetProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductTableModel, int, error)
-	GetProductsBySellerID(ctx context.Context) ([]ProductTableModel, int, error)
+	ListProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductModel, int, error)
+	ListProductsBySellerID(ctx context.Context) ([]ProductModel, int, error)
 	UpdateProductByID(ctx context.Context) (int, error)
 	DeleteProductByID(ctx context.Context) (int, error)
 }
 
-func CreateProductTable(ctx context.Context) error {
-
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
-		logrus.Errorf("CreateProductTable: %v\n", err)
-		return err
+func (product *ProductModel) CreateProduct(ctx context.Context) (int, error) {
+	protoModel := convertProductModelToProtoProductModel(ctx, product)
+	request := &proto.CreateProductRequest{
+		RequestModel: protoModel,
 	}
-
-	return nosql.Client.CreateCollection(ctx, ProductTableName)
-}
-
-func (product *ProductTableModel) CreateProduct(ctx context.Context) (int, error) {
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("CreateProduct: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+	defer conn.Close()
 
-	product.ID = uuid.New().String()
-	product.CreatedAt = time.Now()
-	product.UpdatedAt = time.Now()
-
-	return nosql.Client.InsertOne(ctx, ProductTableName, *product)
+	response, err := nosqlDBClient.CreateProduct(ctx, request)
+	if err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Create", ProductTableName, err)
+		logrus.Errorf("CreateProduct: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	copyProductModelObject(response.ResponseModel, product)
+	logrus.Infof("CreateProduct: Successfully created product for ID %s\n", product.ID)
+	return http.StatusOK, nil
 }
-func (product *ProductTableModel) GetProductByID(ctx context.Context) (int, error) {
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
+func (product *ProductModel) GetProductByID(ctx context.Context) (int, error) {
+	protoModel := convertProductModelToProtoProductModel(ctx, product)
+	request := &proto.GetProductByIDRequest{
+		RequestModel: protoModel,
+	}
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("GetProductByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "_id",
-			RelationType: db.EQUAL,
-			ColumnValue:  product.ID,
-		},
-	}
-	var result ProductTableModel
+	defer conn.Close()
 
-	if statusCode, err := nosql.Client.FindOne(ctx, ProductTableName, whereClause, &result); err != nil {
+	response, err := nosqlDBClient.GetProductByID(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
 		logrus.Errorf("GetProductByID: %v\n", err)
-		return statusCode, err
+		return http.StatusInternalServerError, err
 	}
-	copyProductTableModelObject(&result, product)
+	copyProductModelObject(response.ResponseModel, product)
 	return http.StatusOK, nil
-
 }
 
-func (product *ProductTableModel) GetProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductTableModel, int, error) {
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
-		logrus.Errorf("GetProductsByKeyWordsAndCategory: %v\n", err)
+func (product *ProductModel) ListProductsByKeyWordsAndCategory(ctx context.Context) ([]ProductModel, int, error) {
+	protoModel := convertProductModelToProtoProductModel(ctx, product)
+	request := &proto.ListProductsByKeyWordsAndCategoryRequest{
+		RequestModel: protoModel,
+	}
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("ListProductsByKeyWordsAndCategory: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "keywords",
-			RelationType: db.IN,
-			ColumnValue:  product.Keywords,
-		},
-		{
-			ColumnName:   "category",
-			RelationType: db.EQUAL,
-			ColumnValue:  product.Category,
-		},
-	}
-	var result []ProductTableModel
+	defer conn.Close()
 
-	if statusCode, err := nosql.Client.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
+	response, err := nosqlDBClient.ListProductsByKeyWordsAndCategory(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
-		logrus.Errorf("GetProductsByKeyWordsAndCategory: %v\n", err)
-		return nil, statusCode, err
+		logrus.Errorf("ListProductsByKeyWordsAndCategory: %v\n", err)
+		return nil, http.StatusInternalServerError, err
+	}
+	var result []ProductModel
+	for _, resp := range response.ResponseModel {
+		result = append(result, *convertProtoProductModelToProductModel(ctx, resp))
 	}
 	return result, http.StatusOK, nil
 }
 
-func (product *ProductTableModel) GetProductsBySellerID(ctx context.Context) ([]ProductTableModel, int, error) {
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
-		logrus.Errorf("GetProductBySellerID: %v\n", err)
+func (product *ProductModel) ListProductsBySellerID(ctx context.Context) ([]ProductModel, int, error) {
+	protoModel := convertProductModelToProtoProductModel(ctx, product)
+	request := &proto.ListProductsBySellerIDRequest{
+		RequestModel: protoModel,
+	}
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("ListProductsBySellerID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "sellerID",
-			RelationType: db.EQUAL,
-			ColumnValue:  product.SellerID,
-		},
-	}
-	var result []ProductTableModel
+	defer conn.Close()
 
-	if statusCode, err := nosql.Client.FindMany(ctx, ProductTableName, whereClause, &result); err != nil {
+	response, err := nosqlDBClient.ListProductsBySellerID(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
-		logrus.Errorf("GetProductsBySellerID: %v\n", err)
-		return nil, statusCode, err
+		logrus.Errorf("ListProductsBySellerID: %v\n", err)
+		return nil, http.StatusInternalServerError, err
+	}
+	var result []ProductModel
+	for _, resp := range response.ResponseModel {
+		result = append(result, *convertProtoProductModelToProductModel(ctx, resp))
 	}
 	return result, http.StatusOK, nil
 }
-func (product *ProductTableModel) UpdateProductByID(ctx context.Context) (int, error) {
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
+
+func (product *ProductModel) UpdateProductByID(ctx context.Context) (int, error) {
+	protoModel := convertProductModelToProtoProductModel(ctx, product)
+	request := &proto.UpdateProductByIDRequest{
+		RequestModel: protoModel,
+	}
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("UpdateProductByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "_id",
-			RelationType: db.EQUAL,
-			ColumnValue:  product.ID,
-		},
+	defer conn.Close()
+
+	response, err := nosqlDBClient.UpdateProductByID(ctx, request)
+	if err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Update", ProductTableName, err)
+		logrus.Errorf("UpdateProductByID: %v\n", err)
+		return http.StatusInternalServerError, err
 	}
-	product.UpdatedAt = time.Now()
-	if statusCode, err := nosql.Client.UpdateOne(ctx, ProductTableName, whereClause, *product); err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
-		logrus.Errorf("GetProductBySellerID: %v\n", err)
-		return statusCode, err
-	}
+	copyProductModelObject(response.ResponseModel, product)
 	return http.StatusOK, nil
 }
-func (product *ProductTableModel) DeleteProductByID(ctx context.Context) (int, error) {
-	if err := nosql.VerifyNOSQLDatabaseConnection(ctx, nosql.Client); err != nil {
-		err := fmt.Errorf("exception while creating %s table. %v", ProductTableName, err)
+func (product *ProductModel) DeleteProductByID(ctx context.Context) (int, error) {
+	protoModel := convertProductModelToProtoProductModel(ctx, product)
+	request := &proto.DeleteProductByIDRequest{
+		RequestModel: protoModel,
+	}
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("DeleteProductByID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "_id",
-			RelationType: db.EQUAL,
-			ColumnValue:  product.ID,
-		},
-	}
-	product.UpdatedAt = time.Now()
-	if statusCode, err := nosql.Client.DeleteOne(ctx, ProductTableName, whereClause); err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", ProductTableName, err)
+	defer conn.Close()
+
+	if _, err := nosqlDBClient.DeleteProductByID(ctx, request); err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", ProductTableName, err)
 		logrus.Errorf("DeleteProductByID: %v\n", err)
-		return statusCode, err
+		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
 }
 
-func copyProductTableModelObject(from, to *ProductTableModel) {
+func copyProductModelObject(from *proto.ProductModel, to *ProductModel) {
 	to.ID = from.ID
 	to.Name = from.Name
-	to.Category = from.Category
+	to.Category = CATEGORY(from.Category)
 	to.Keywords = from.Keywords
-	to.Condition = from.Condition
+	to.Condition = CONDITION(from.Condition)
 	to.SalePrice = from.SalePrice
 	to.SellerID = from.SellerID
-	to.Quantity = from.Quantity
-	to.FeedBackThumbsUp = from.FeedBackThumbsUp
-	to.FeedBackThumbsDown = from.FeedBackThumbsDown
-	to.CreatedAt = from.CreatedAt
-	to.UpdatedAt = from.UpdatedAt
+	to.Quantity = int(from.Quantity)
+	to.FeedBackThumbsUp = int(from.FeedBackThumbsUp)
+	to.FeedBackThumbsDown = int(from.FeedBackThumbsDown)
+	to.CreatedAt = from.CreatedAt.AsTime()
+	to.UpdatedAt = from.UpdatedAt.AsTime()
+}
+
+func convertProductModelToProtoProductModel(ctx context.Context, model *ProductModel) *proto.ProductModel {
+	return &proto.ProductModel{
+		ID:                 model.ID,
+		Name:               model.Name,
+		Category:           proto.CATEGORY(model.Category),
+		Keywords:           model.Keywords,
+		Condition:          proto.CONDITION(model.Condition),
+		SalePrice:          model.SalePrice,
+		SellerID:           model.SellerID,
+		Quantity:           int32(model.Quantity),
+		FeedBackThumbsUp:   int32(model.FeedBackThumbsUp),
+		FeedBackThumbsDown: int32(model.FeedBackThumbsDown),
+		CreatedAt:          timestamppb.New(model.CreatedAt),
+		UpdatedAt:          timestamppb.New(model.CreatedAt),
+	}
+}
+
+func convertProtoProductModelToProductModel(ctx context.Context, protoModel *proto.ProductModel) *ProductModel {
+	return &ProductModel{
+		ID:                 protoModel.ID,
+		Name:               protoModel.Name,
+		Category:           CATEGORY(protoModel.Category),
+		Keywords:           protoModel.Keywords,
+		Condition:          CONDITION(protoModel.Condition),
+		SalePrice:          protoModel.SalePrice,
+		SellerID:           protoModel.SellerID,
+		Quantity:           int(protoModel.Quantity),
+		FeedBackThumbsUp:   int(protoModel.FeedBackThumbsUp),
+		FeedBackThumbsDown: int(protoModel.FeedBackThumbsDown),
+		CreatedAt:          protoModel.CreatedAt.AsTime(),
+		UpdatedAt:          protoModel.UpdatedAt.AsTime(),
+	}
 }
 
 //func (product *ProductModel) updateProductByID() (int, error) {

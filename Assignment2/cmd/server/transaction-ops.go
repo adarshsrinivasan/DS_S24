@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,6 +18,7 @@ type TransactionModel struct {
 	SellerID  string    `json:"sellerID,omitempty" bson:"sellerID" bun:"sellerID,notnull"`
 	Quantity  int       `json:"quantity,omitempty" bson:"quantity" bun:"quantity,notnull"`
 	Price     float32   `json:"price,omitempty" bson:"price,omitempty" bun:"quantity,notnull"`
+	Version   int       `json:"version,omitempty" bson:"version" bun:"version,notnull"`
 	CreatedAt time.Time `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
 }
@@ -28,28 +29,20 @@ func createTransaction(ctx context.Context, transactionModel *TransactionModel) 
 		logrus.Errorf("createTransaction: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	transactionTableModelObj := convertTransactionModelToTransactionTableModel(ctx, transactionModel)
-	transactionTableModelObj.ID = ""
-	return transactionTableModelObj.CreateTransaction(ctx)
+	transactionModel.ID = ""
+	return transactionModel.CreateTransaction(ctx)
 }
 
 func getTransactionListByCartID(ctx context.Context, cartID string) ([]TransactionModel, int, error) {
-	transactionTableModelObj := TransactionTableModel{CartID: cartID}
-	transactionTableModels, statusCode, err := transactionTableModelObj.ListTransactionsByCartID(ctx)
+	transactionTableModelObj := TransactionModel{CartID: cartID}
+	transactionModels, statusCode, err := transactionTableModelObj.ListTransactionsByCartID(ctx)
 	if err != nil {
 		err := fmt.Errorf("exception while reading Transaction by cartID %s. %v", cartID, err)
 		logrus.Errorf("getTransactionByCartID: %v\n", err)
 		return nil, statusCode, err
 	}
 
-	transactionsModels := []TransactionModel{}
-
-	for _, t := range transactionTableModels {
-		transactionModelObj := convertTransactionTableModelToTransactionModel(ctx, &t)
-		transactionsModels = append(transactionsModels, *transactionModelObj)
-	}
-
-	return transactionsModels, http.StatusOK, nil
+	return transactionModels, http.StatusOK, nil
 }
 
 func getTransactionListByBuyerID(ctx context.Context, sessionID string) ([]TransactionModel, int, error) {
@@ -60,28 +53,21 @@ func getTransactionListByBuyerID(ctx context.Context, sessionID string) ([]Trans
 		logrus.Errorf("getTransactionListByBuyerID: %v\n", err)
 		return nil, statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("getTransactionListByBuyerID: %v\n", err)
 		return nil, http.StatusBadRequest, err
 	}
 
-	transactionTableModelObj := TransactionTableModel{BuyerID: userID}
-	transactionTableModels, statusCode, err := transactionTableModelObj.ListTransactionsByBuyerID(ctx)
+	transactionTableModelObj := TransactionModel{BuyerID: userID}
+	transactionModels, statusCode, err := transactionTableModelObj.ListTransactionsByBuyerID(ctx)
 	if err != nil {
 		err := fmt.Errorf("exception while reading Transaction by buyerID %s. %v", userID, err)
 		logrus.Errorf("getTransactionListByBuyerID: %v\n", err)
 		return nil, statusCode, err
 	}
 
-	transactionsModels := []TransactionModel{}
-
-	for _, t := range transactionTableModels {
-		transactionModelObj := convertTransactionTableModelToTransactionModel(ctx, &t)
-		transactionsModels = append(transactionsModels, *transactionModelObj)
-	}
-
-	return transactionsModels, http.StatusOK, nil
+	return transactionModels, http.StatusOK, nil
 }
 
 func getTransactionListBySellerID(ctx context.Context, sessionID string) ([]TransactionModel, int, error) {
@@ -91,32 +77,25 @@ func getTransactionListBySellerID(ctx context.Context, sessionID string) ([]Tran
 		logrus.Errorf("getTransactionListBySellerID: %v\n", err)
 		return nil, statusCode, err
 	}
-	if userType != common.Seller {
+	if userType != common.SELLER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("getTransactionListBySellerID: %v\n", err)
 		return nil, http.StatusBadRequest, err
 	}
 
-	transactionTableModelObj := TransactionTableModel{SellerID: userID}
-	transactionTableModels, statusCode, err := transactionTableModelObj.ListTransactionsBySellerID(ctx)
+	transactionTableModelObj := TransactionModel{SellerID: userID}
+	transactionModels, statusCode, err := transactionTableModelObj.ListTransactionsBySellerID(ctx)
 	if err != nil {
 		err := fmt.Errorf("exception while reading Transaction by sellerID %s. %v", userID, err)
 		logrus.Errorf("getTransactionListByBuyerID: %v\n", err)
 		return nil, statusCode, err
 	}
 
-	transactionsModels := []TransactionModel{}
-
-	for _, t := range transactionTableModels {
-		transactionModelObj := convertTransactionTableModelToTransactionModel(ctx, &t)
-		transactionsModels = append(transactionsModels, *transactionModelObj)
-	}
-
-	return transactionsModels, http.StatusOK, nil
+	return transactionModels, http.StatusOK, nil
 }
 
 func deleteTransactionByCartID(ctx context.Context, cartID string) (int, error) {
-	transactionTableModelObj := TransactionTableModel{CartID: cartID}
+	transactionTableModelObj := TransactionModel{CartID: cartID}
 	if statusCode, err := transactionTableModelObj.DeleteTransactionsByCartID(ctx); err != nil {
 		err := fmt.Errorf("exception while delete Transaction by cartID %s. %v", cartID, err)
 		logrus.Errorf("deleteTransactionByCartID: %v\n", err)
@@ -126,7 +105,7 @@ func deleteTransactionByCartID(ctx context.Context, cartID string) (int, error) 
 }
 
 func deleteTransactionByBuyerID(ctx context.Context, buyerID string) (int, error) {
-	transactionTableModelObj := TransactionTableModel{BuyerID: buyerID}
+	transactionTableModelObj := TransactionModel{BuyerID: buyerID}
 	if statusCode, err := transactionTableModelObj.DeleteTransactionsByBuyerID(ctx); err != nil {
 		err := fmt.Errorf("exception while delete Transaction by buyerID %s. %v", buyerID, err)
 		logrus.Errorf("deleteTransactionByBuyerID: %v\n", err)
@@ -136,7 +115,7 @@ func deleteTransactionByBuyerID(ctx context.Context, buyerID string) (int, error
 }
 
 func deleteTransactionBySellerID(ctx context.Context, sellerID string) (int, error) {
-	transactionTableModelObj := TransactionTableModel{SellerID: sellerID}
+	transactionTableModelObj := TransactionModel{SellerID: sellerID}
 	if statusCode, err := transactionTableModelObj.DeleteTransactionsBySellerID(ctx); err != nil {
 		err := fmt.Errorf("exception while delete Transaction by sellerID %s. %v", sellerID, err)
 		logrus.Errorf("deleteTransactionBySellerID: %v\n", err)
@@ -190,32 +169,4 @@ func validateTransactionModel(ctx context.Context, transactionModel *Transaction
 	}
 
 	return nil
-}
-
-func convertTransactionModelToTransactionTableModel(ctx context.Context, transactionModel *TransactionModel) *TransactionTableModel {
-	return &TransactionTableModel{
-		ID:        transactionModel.ID,
-		CartID:    transactionModel.CartID,
-		ProductID: transactionModel.ProductID,
-		BuyerID:   transactionModel.BuyerID,
-		SellerID:  transactionModel.SellerID,
-		Quantity:  transactionModel.Quantity,
-		Price:     transactionModel.Price,
-		CreatedAt: transactionModel.CreatedAt,
-		UpdatedAt: transactionModel.UpdatedAt,
-	}
-}
-
-func convertTransactionTableModelToTransactionModel(ctx context.Context, transactionTableModel *TransactionTableModel) *TransactionModel {
-	return &TransactionModel{
-		ID:        transactionTableModel.ID,
-		CartID:    transactionTableModel.CartID,
-		ProductID: transactionTableModel.ProductID,
-		BuyerID:   transactionTableModel.BuyerID,
-		SellerID:  transactionTableModel.SellerID,
-		Quantity:  transactionTableModel.Quantity,
-		Price:     transactionTableModel.Price,
-		CreatedAt: transactionTableModel.CreatedAt,
-		UpdatedAt: transactionTableModel.UpdatedAt,
-	}
 }

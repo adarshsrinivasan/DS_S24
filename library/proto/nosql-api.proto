@@ -1,0 +1,111 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/adarshsrinivasan/DS_S24/library/proto";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+service NOSQLService {
+  rpc Initialize(proto.InitializeRequest) returns (proto.InitializeResponse) {}
+
+  //ProductModel APIs
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse) {}
+  rpc GetProductByID(GetProductByIDRequest) returns (GetProductByIDResponse) {}
+  rpc ListProductsByKeyWordsAndCategory(ListProductsByKeyWordsAndCategoryRequest) returns (ListProductsByKeyWordsAndCategoryResponse) {}
+  rpc ListProductsBySellerID(ListProductsBySellerIDRequest) returns (ListProductsBySellerIDResponse) {}
+  rpc UpdateProductByID(UpdateProductByIDRequest) returns (UpdateProductByIDResponse) {}
+  rpc DeleteProductByID(DeleteProductByIDRequest) returns (DeleteProductByIDResponse) {}
+}
+
+enum CATEGORY {
+  ZERO = 0;
+  ONE = 1;
+  TWO = 2;
+  THREE = 3;
+  FOUR = 4;
+  FIVE = 5;
+  SIX = 6;
+  SEVEN = 7;
+  EIGHT = 8;
+  NINE = 9;
+}
+
+enum CONDITION {
+  NEW = 0;
+  USED = 1;
+}
+
+message ProductModel {
+  string ID  = 1;
+  string Name  = 2;
+  CATEGORY Category  = 3;
+  repeated string Keywords  = 4;
+  CONDITION Condition  = 5;
+  float SalePrice  = 6;
+  string SellerID  = 7;
+  int32 Quantity  = 8;
+  int32 FeedBackThumbsUp  = 9;
+  int32 FeedBackThumbsDown  = 10;
+  google.protobuf.Timestamp CreatedAt  = 11;
+  google.protobuf.Timestamp UpdatedAt  = 12;
+}
+
+message CreateProductRequest {
+  ProductModel requestModel = 1;
+}
+
+message CreateProductResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  ProductModel responseModel = 3;
+}
+
+message GetProductByIDRequest {
+  ProductModel requestModel = 1;
+}
+
+message GetProductByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  ProductModel responseModel = 3;
+}
+
+message ListProductsByKeyWordsAndCategoryRequest {
+  ProductModel requestModel = 1;
+}
+
+message ListProductsByKeyWordsAndCategoryResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  repeated ProductModel responseModel = 3;
+}
+
+message ListProductsBySellerIDRequest {
+  ProductModel requestModel = 1;
+}
+
+message ListProductsBySellerIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  repeated ProductModel responseModel = 3;
+}
+
+message UpdateProductByIDRequest {
+  ProductModel requestModel = 1;
+}
+
+message UpdateProductByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  ProductModel responseModel = 3;
+}
+
+message DeleteProductByIDRequest {
+  ProductModel requestModel = 1;
+}
+
+message DeleteProductByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}

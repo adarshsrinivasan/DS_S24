@@ -12,17 +12,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/nosql"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/sql"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
+	"github.com/adarshsrinivasan/DS_S24/library/db/nosql"
+	"github.com/adarshsrinivasan/DS_S24/library/db/sql"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	ServiceName   = "server"
-	ServerHostEnv = "SERVER_HOST"
-	ServerPortEnv = "SERVER_PORT"
-	SQLSchemaName = "marketplace"
+	ServiceName        = "server"
+	ServerHostEnv      = "SERVER_HOST"
+	ServerPortEnv      = "SERVER_PORT"
+	SQLSchemaName      = "marketplace"
+	NOSQLSchemaNameEnv = "MONGO_DB"
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 	ctx               context.Context
 	httpServerHost    = common.GetEnv(ServerHostEnv, "localhost")
 	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
+	nosqlSchemaName   = common.GetEnv(NOSQLSchemaNameEnv, "marketplace")
 )
 
 func initializeSQLDB(ctx context.Context) error {
@@ -84,7 +86,7 @@ func initializeSQLDB(ctx context.Context) error {
 
 func initializeNOSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeNOSQLDB: Initializating NOSQLDB...\n")
-	nosql.Client, err = nosql.NewNoSQLClient(ctx, ServiceName)
+	nosql.Client, err = nosql.NewNoSQLClient(ctx, ServiceName, nosqlSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while initializing NOSQLDB buyer. %v", err)
 		logrus.Errorf("initializeNOSQLDB: %v\n", err)
@@ -151,7 +153,7 @@ func handleConnection(conn net.Conn) {
 
 	if err := initialExchange(clientReader); err != nil {
 		logrus.Errorf("Unable to read Client %s initial message. Logging out the user", conn.RemoteAddr().String())
-		common.RespondWithError(conn, http.StatusGatewayTimeout, "Timeout: Logging you out!\n")
+		common.TCPRespondWithError(conn, http.StatusGatewayTimeout, "Timeout: Logging you out!\n")
 		return
 	}
 
@@ -168,7 +170,7 @@ func handleConnection(conn net.Conn) {
 
 			_ = conn.SetDeadline(time.Now().Add(time.Minute))
 			warning = true
-			common.RespondWithError(conn, http.StatusContinue, "Session timeout warning: You will be automatically logged out in the next minute\n")
+			common.TCPRespondWithError(conn, http.StatusContinue, "Session timeout warning: You will be automatically logged out in the next minute\n")
 
 			_, err = clientReader.Read(requestBody)
 
@@ -176,7 +178,7 @@ func handleConnection(conn net.Conn) {
 				if warning {
 					_ = conn.SetDeadline(time.Now().Add(time.Second * 10))
 					log.Printf("Client %s is inactive. Logging out the user\n", conn.RemoteAddr().String())
-					common.RespondWithError(conn, http.StatusGatewayTimeout, "Timeout: Logging you out!\n")
+					common.TCPRespondWithError(conn, http.StatusGatewayTimeout, "Timeout: Logging you out!\n")
 					return
 				}
 			}
@@ -191,7 +193,7 @@ func handleConnection(conn net.Conn) {
 
 		clientRequest.DeserializeRequest(requestBody)
 		log.Printf("Received request: %s at: %v", clientRequest.String(), myTime)
-		if clientRequest.UserType == common.Seller {
+		if clientRequest.UserType == common.SELLER {
 			listOfSellerHandlers(ctx, conn, clientRequest)
 		} else {
 			listOfBuyerHandlers(ctx, conn, clientRequest)

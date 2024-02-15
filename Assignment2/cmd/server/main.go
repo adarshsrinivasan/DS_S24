@@ -3,90 +3,80 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/adarshsrinivasan/DS_S24/library/proto"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/nosql"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/sql"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	ServiceName   = "server"
-	ServerHostEnv = "SERVER_HOST"
-	ServerPortEnv = "SERVER_PORT"
-	SQLSchemaName = "marketplace"
+	ServiceName        = "server"
+	ServerHostEnv      = "SERVER_HOST"
+	ServerPortEnv      = "SERVER_PORT"
+	SQLRPCHostEnv      = "SQL_RPC_HOST"
+	SQLRPCPortEnv      = "SQL_RPC_PORT"
+	NOSQLRPCHostEnv    = "NOSQL_RPC_HOST"
+	NOSQLRPCPortEnv    = "NOSQL_RPC_PORT"
+	SQLSchemaName      = "marketplace"
+	NOSQLSchemaNameEnv = "MONGO_DB"
 )
 
 var (
 	err               error
 	ctx               context.Context
+	nosqlSchemaName   = common.GetEnv(NOSQLSchemaNameEnv, "marketplace")
 	httpServerHost    = common.GetEnv(ServerHostEnv, "localhost")
 	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
+	sqlRPCHost        = common.GetEnv(SQLRPCHostEnv, "localhost")
+	sqlRPCPort, _     = strconv.Atoi(common.GetEnv(SQLRPCPortEnv, "50002"))
+	nosqlRPCHost      = common.GetEnv(NOSQLRPCHostEnv, "localhost")
+	nosqlRPCPort, _   = strconv.Atoi(common.GetEnv(NOSQLRPCPortEnv, "50001"))
 )
 
 func initializeSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeSQLDB: Initializating SQLDB...\n")
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	// Set up a connection to the server.
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
+		err = fmt.Errorf("exception while connecting to NOSQLDB RPC server. %v", err)
+		logrus.Errorf("initializeNOSQLDB: %v\n", err)
 		return err
 	}
-	defer client.Close(ctx)
-
-	if err := client.Initialize(ctx, SQLSchemaName); err != nil {
-		err = fmt.Errorf("exception while initializing SQLDB client. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
-		return err
+	defer conn.Close()
+	initializeRequest := &proto.InitializeRequest{
+		ServiceName:   ServiceName,
+		SQLSchemaName: SQLSchemaName,
 	}
 
-	if err := CreateSellerTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating seller tabel. %v", err)
+	if _, err := sqlDBClient.Initialize(ctx, initializeRequest); err != nil {
+		err = fmt.Errorf("exception while initializing SQLDB RPC client. %v", err)
 		logrus.Errorf("initializeSQLDB: %v\n", err)
 		return err
 	}
-	if err := CreateBuyerTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating buyer tabel. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
-		return err
-	}
-	if err := CreateSessionTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating session tabel. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
-		return err
-	}
-	if err := CreateCartTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating cart tabel. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
-		return err
-	}
-	if err := CreateCartItemTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating cartItem tabel. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
-		return err
-	}
-	if err := CreateTransactionTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating transaction tabel. %v", err)
-		logrus.Errorf("initializeSQLDB: %v\n", err)
-		return err
-	}
+
 	logrus.Infof("initializeSQLDB: Initialized SQLDB Successfully!\n")
 	return nil
 }
 
 func initializeNOSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeNOSQLDB: Initializating NOSQLDB...\n")
-	nosql.Client, err = nosql.NewNoSQLClient(ctx, ServiceName)
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while initializing NOSQLDB buyer. %v", err)
+		err = fmt.Errorf("exception while connecting to NOSQLDB RPC server. %v", err)
 		logrus.Errorf("initializeNOSQLDB: %v\n", err)
 		return err
 	}
-	if err := CreateProductTable(ctx); err != nil {
-		err = fmt.Errorf("exception while creating product tabel. %v", err)
+	defer conn.Close()
+	initializeRequest := &proto.InitializeRequest{
+		ServiceName:   ServiceName,
+		SQLSchemaName: nosqlSchemaName,
+	}
+
+	if _, err := nosqlDBClient.Initialize(ctx, initializeRequest); err != nil {
+		err = fmt.Errorf("exception while initializing NOSQLDB RPC client. %v", err)
 		logrus.Errorf("initializeNOSQLDB: %v\n", err)
 		return err
 	}

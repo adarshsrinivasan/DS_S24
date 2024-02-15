@@ -1,0 +1,435 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/adarshsrinivasan/DS_S24/library/proto";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+enum USERTYPE {
+  BUYER = 0;
+  SELLER = 1;
+}
+
+service SQLService {
+  rpc Initialize(proto.InitializeRequest) returns (proto.InitializeResponse) {}
+
+  //BuyerModel APIs
+  rpc CreateBuyer(CreateBuyerRequest) returns (CreateBuyerResponse) {}
+  rpc GetBuyerByID(GetBuyerByIDRequest) returns (GetBuyerByIDResponse) {}
+  rpc GetBuyerByUserName(GetBuyerByUserNameRequest) returns (GetBuyerByUserNameResponse) {}
+  rpc UpdateBuyerByID(UpdateBuyerByIDRequest) returns (UpdateBuyerByIDResponse) {}
+
+  //CartModel APIs
+  rpc CreateCart(CreateCartRequest) returns (CreateCartResponse) {}
+  rpc GetCartByID(GetCartByIDRequest) returns (GetCartByIDResponse) {}
+  rpc GetCartByBuyerID(GetCartByBuyerIDRequest) returns (GetCartByBuyerIDResponse) {}
+  rpc UpdateCartByID(UpdateCartByIDRequest) returns (UpdateCartByIDResponse) {}
+  rpc DeleteCartByID(DeleteCartByIDRequest) returns (DeleteCartByIDResponse) {}
+
+  //CartItemModel APIs
+  rpc CreateCartItem(CreateCartItemRequest) returns (CreateCartItemResponse) {}
+  rpc GetCartItemByID(GetCartItemByIDRequest) returns (GetCartItemByIDResponse) {}
+  rpc GetCartItemByCartIDAndProductID(GetCartItemByCartIDAndProductIDRequest) returns (GetCartItemByCartIDAndProductIDResponse) {}
+  rpc ListCartItemByCartID(ListCartItemByCartIDRequest) returns (ListCartItemByCartIDResponse) {}
+  rpc UpdateCartItem(UpdateCartItemRequest) returns (UpdateCartItemResponse) {}
+  rpc DeleteCartItemByCartIDAndProductID(DeleteCartItemByCartIDAndProductIDRequest) returns (DeleteCartItemByCartIDAndProductIDResponse) {}
+  rpc DeleteCartItemByCartID(DeleteCartItemByCartIDRequest) returns (DeleteCartItemByCartIDResponse) {}
+  rpc DeleteCartItemByProductID(DeleteCartItemByProductIDRequest) returns (DeleteCartItemByProductIDResponse) {}
+
+  //SellerModel APIs
+  rpc CreateSeller(CreateSellerRequest) returns (CreateSellerResponse) {}
+  rpc GetSellerByID(GetSellerByIDRequest) returns (GetSellerByIDResponse) {}
+  rpc GetSellerByUserName(GetSellerByUserNameRequest) returns (GetSellerByUserNameResponse) {}
+  rpc UpdateSellerByID(UpdateSellerByIDRequest) returns (UpdateSellerByIDResponse) {}
+
+  //SessionModel APIs
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse) {}
+  rpc GetSessionByID(GetSessionByIDRequest) returns (GetSessionByIDResponse) {}
+  rpc GetSessionByUserID(GetSessionByUserIDRequest) returns (GetSessionByUserIDResponse) {}
+  rpc DeleteSessionByID(DeleteSessionByIDRequest) returns (DeleteSessionByIDResponse) {}
+
+  rpc CreateTransaction(CreateTransactionRequest) returns (CreateTransactionResponse) {}
+  rpc ListTransactionsBySellerID(ListTransactionsBySellerIDRequest) returns (ListTransactionsBySellerIDResponse) {}
+  rpc ListTransactionsByBuyerID(ListTransactionsByBuyerIDRequest) returns (ListTransactionsByBuyerIDResponse) {}
+  rpc ListTransactionsByCartID(ListTransactionsByCartIDRequest) returns (ListTransactionsByCartIDResponse) {}
+  rpc DeleteTransactionsByCartID(DeleteTransactionsByCartIDRequest) returns (DeleteTransactionsByCartIDResponse) {}
+  rpc DeleteTransactionsByBuyerID(DeleteTransactionsByBuyerIDRequest) returns (DeleteTransactionsByBuyerIDResponse) {}
+  rpc DeleteTransactionsBySellerID(DeleteTransactionsBySellerIDRequest) returns (DeleteTransactionsBySellerIDResponse) {}
+}
+
+message BuyerModel {
+  string ID  = 1;
+  string Name  = 2;
+  string UserName  = 3;
+  string Password  = 4;
+  int32 Version  = 5;
+  google.protobuf.Timestamp CreatedAt  = 6;
+  google.protobuf.Timestamp UpdatedAt  = 7;
+}
+
+message CartModel {
+  string ID  = 1;
+  string BuyerID  = 2;
+  bool Saved  = 3;
+  int32 Version  = 6;
+  google.protobuf.Timestamp CreatedAt  = 7;
+  google.protobuf.Timestamp UpdatedAt  = 8;
+}
+
+message CartItemModel {
+  string ID  = 1;
+  string CartID  = 2;
+  string ProductID  = 3;
+  int32 Quantity  = 4;
+  int32 Version  = 5;
+  google.protobuf.Timestamp CreatedAt  = 6;
+  google.protobuf.Timestamp UpdatedAt  = 7;
+}
+
+message SellerModel {
+  string ID  = 1;
+  string Name  = 2;
+  int32 FeedBackThumbsUp  = 3;
+  int32 FeedBackThumbsDown  = 4;
+  int32 NumberOfItemsSold  = 5;
+  string UserName  = 6;
+  string Password  = 7;
+  int32 Version  = 8;
+  google.protobuf.Timestamp CreatedAt  = 9;
+  google.protobuf.Timestamp UpdatedAt  = 10;
+}
+
+message TransactionModel {
+  string ID  = 1;
+  string CartID  = 2;
+  string ProductID  = 3;
+  string BuyerID  = 4;
+  string SellerID  = 5;
+  int32 Quantity  = 6;
+  float Price  = 7;
+  int32 Version  = 8;
+  google.protobuf.Timestamp CreatedAt  = 9;
+  google.protobuf.Timestamp UpdatedAt  = 10;
+}
+
+message SessionModel {
+  string ID  = 1;
+  string UserID  = 2;
+  USERTYPE UserType  = 3;
+  int32 Version  = 4;
+  google.protobuf.Timestamp CreatedAt  = 5;
+  google.protobuf.Timestamp UpdatedAt  = 6;
+}
+
+message CreateBuyerRequest {
+  BuyerModel requestModel = 1;
+}
+
+message CreateBuyerResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  BuyerModel responseModel = 3;
+}
+
+message GetBuyerByIDRequest {
+  BuyerModel requestModel = 1;
+}
+
+message GetBuyerByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  BuyerModel responseModel = 3;
+}
+
+message GetBuyerByUserNameRequest {
+  BuyerModel requestModel = 1;
+}
+
+message GetBuyerByUserNameResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  BuyerModel responseModel = 3;
+}
+
+message UpdateBuyerByIDRequest {
+  BuyerModel requestModel = 1;
+}
+
+message UpdateBuyerByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  BuyerModel responseModel = 3;
+}
+
+message CreateCartRequest {
+  CartModel requestModel = 1;
+}
+
+message CreateCartResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartModel responseModel = 3;
+}
+
+message GetCartByIDRequest {
+  CartModel requestModel = 1;
+}
+
+message GetCartByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartModel responseModel = 3;
+}
+
+message GetCartByBuyerIDRequest {
+  CartModel requestModel = 1;
+}
+
+message GetCartByBuyerIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartModel responseModel = 3;
+}
+
+message UpdateCartByIDRequest {
+  CartModel requestModel = 1;
+}
+
+message UpdateCartByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartModel responseModel = 3;
+}
+
+message DeleteCartByIDRequest {
+  CartModel requestModel = 1;
+}
+
+message DeleteCartByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message CreateCartItemRequest {
+  CartItemModel requestModel = 1;
+}
+
+message CreateCartItemResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartItemModel responseModel = 3;
+}
+
+message GetCartItemByIDRequest {
+  CartItemModel requestModel = 1;
+}
+
+message GetCartItemByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartItemModel responseModel = 3;
+}
+
+message GetCartItemByCartIDAndProductIDRequest {
+  CartItemModel requestModel = 1;
+}
+
+message GetCartItemByCartIDAndProductIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartItemModel responseModel = 3;
+}
+
+message ListCartItemByCartIDRequest {
+  CartItemModel requestModel = 1;
+}
+
+message ListCartItemByCartIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  repeated CartItemModel responseModel = 3;
+}
+
+message UpdateCartItemRequest {
+  CartItemModel requestModel = 1;
+}
+
+message UpdateCartItemResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  CartItemModel responseModel = 3;
+}
+
+message DeleteCartItemByCartIDAndProductIDRequest {
+  CartItemModel requestModel = 1;
+}
+
+message DeleteCartItemByCartIDAndProductIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message DeleteCartItemByCartIDRequest {
+  CartItemModel requestModel = 1;
+}
+
+message DeleteCartItemByCartIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message DeleteCartItemByProductIDRequest {
+  CartItemModel requestModel = 1;
+}
+
+message DeleteCartItemByProductIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message CreateSellerRequest {
+  SellerModel requestModel = 1;
+}
+
+message CreateSellerResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SellerModel responseModel = 3;
+}
+
+message GetSellerByIDRequest {
+  SellerModel requestModel = 1;
+}
+
+message GetSellerByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SellerModel responseModel = 3;
+}
+
+message GetSellerByUserNameRequest {
+  SellerModel requestModel = 1;
+}
+
+message GetSellerByUserNameResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SellerModel responseModel = 3;
+}
+
+message UpdateSellerByIDRequest {
+  SellerModel requestModel = 1;
+}
+
+message UpdateSellerByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SellerModel responseModel = 3;
+}
+
+message CreateSessionRequest {
+  SessionModel requestModel = 1;
+}
+
+message CreateSessionResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SessionModel responseModel = 3;
+}
+
+message GetSessionByIDRequest {
+  SessionModel requestModel = 1;
+}
+
+message GetSessionByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SessionModel responseModel = 3;
+}
+
+message GetSessionByUserIDRequest {
+  SessionModel requestModel = 1;
+}
+
+message GetSessionByUserIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  SessionModel responseModel = 3;
+}
+
+message DeleteSessionByIDRequest {
+  SessionModel requestModel = 1;
+}
+
+message DeleteSessionByIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message CreateTransactionRequest {
+  TransactionModel requestModel = 1;
+}
+
+message CreateTransactionResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  TransactionModel responseModel = 3;
+}
+
+message ListTransactionsByCartIDRequest {
+  TransactionModel requestModel = 1;
+}
+
+message ListTransactionsByCartIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  repeated TransactionModel responseModel = 3;
+}
+
+message ListTransactionsByBuyerIDRequest {
+  TransactionModel requestModel = 1;
+}
+
+message ListTransactionsByBuyerIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  repeated TransactionModel responseModel = 3;
+}
+
+message ListTransactionsBySellerIDRequest {
+  TransactionModel requestModel = 1;
+}
+
+message ListTransactionsBySellerIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+  repeated TransactionModel responseModel = 3;
+}
+
+message DeleteTransactionsByCartIDRequest {
+  TransactionModel requestModel = 1;
+}
+
+message DeleteTransactionsByCartIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message DeleteTransactionsBySellerIDRequest {
+  TransactionModel requestModel = 1;
+}
+
+message DeleteTransactionsBySellerIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}
+
+message DeleteTransactionsByBuyerIDRequest {
+  TransactionModel requestModel = 1;
+}
+
+message DeleteTransactionsByBuyerIDResponse {
+  int32 statusCode = 1;
+  proto.error err = 2;
+}

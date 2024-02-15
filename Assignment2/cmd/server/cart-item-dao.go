@@ -3,15 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"reflect"
-	"time"
-
-	"github.com/adarshsrinivasan/DS_S24/libraries/db"
-	"github.com/adarshsrinivasan/DS_S24/libraries/db/sql"
-	"github.com/google/uuid"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
+	"github.com/adarshsrinivasan/DS_S24/library/proto"
 	"github.com/sirupsen/logrus"
-	"github.com/uptrace/bun/schema"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"net/http"
 )
 
 const (
@@ -23,270 +19,228 @@ type CartItemOps interface {
 	CreateCartItem(ctx context.Context) (int, error)
 	GetCartItemByID(ctx context.Context) (int, error)
 	GetCartItemByCartIDAndProductID(ctx context.Context) (int, error)
-	ListCartItemByCartID(ctx context.Context) ([]CartItemTableModel, int, error)
+	ListCartItemByCartID(ctx context.Context) ([]CartItemModel, int, error)
 	UpdateCartItem(ctx context.Context) (int, error)
 	DeleteCartItemByCartIDAndProductID(ctx context.Context) (int, error)
 	DeleteCartItemByCartID(ctx context.Context) (int, error)
+	DeleteCartItemByProductID(ctx context.Context) (int, error)
 }
 
-type CartItemTableModel struct {
-	schema.BaseModel `bun:"table:cartitem_data,alias:cartitem"`
-	ID               string    `json:"id" bson:"id" bun:"id,pk"`
-	CartID           string    `json:"cartID" bson:"cartID" bun:"cartID,notnull"`
-	ProductID        string    `json:"productID" bson:"productID" bun:"productID,notnull"`
-	SellerID         string    `json:"sellerID" bson:"sellerID" bun:"sellerID,notnull"`
-	Quantity         int       `json:"quantity" bson:"quantity" bun:"quantity,notnull"`
-	Price            float32   `json:"price" bson:"price,omitempty" bun:"price,notnull"`
-	Version          int       `json:"version" bson:"version" bun:"version,notnull"`
-	CreatedAt        time.Time `json:"createdAt"  bson:"createdAt" bun:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt" bson:"updatedAt" bun:"updatedAt"`
-}
-
-func CreateCartItemTable(ctx context.Context) error {
-
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) CreateCartItem(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.CreateCartItemRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
-		logrus.Errorf("CreateCartItemTable: %v\n", err)
-		return err
-	}
-	defer client.Close(ctx)
-
-	tableSchemaPtr := reflect.New(reflect.TypeOf(CartItemTableModel{}))
-
-	foreignKeys := []db.ForeignKey{
-		{
-			ColumnName:    "cartID",
-			SrcColumnName: "id",
-			SrcTableName:  CartTableName,
-			CascadeDelete: true,
-		},
-		{
-			ColumnName:    "sellerID",
-			SrcColumnName: "id",
-			SrcTableName:  SellerTableName,
-			CascadeDelete: true,
-		},
-	}
-
-	if err := client.CreateTable(ctx, tableSchemaPtr.Interface(), CartItemTableName, foreignKeys); err != nil {
-		err := fmt.Errorf("exception while creating table %s. %v", err, CartItemTableName)
-		logrus.Errorf("CreateCartItemTable: %v\n", err)
-		return err
-	}
-
-	return nil
-}
-
-func (cartItem *CartItemTableModel) CreateCartItem(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
-	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("CreateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	cartItem.ID = uuid.New().String()
-	cartItem.Version = 0
-	cartItem.CreatedAt = time.Now()
-	cartItem.UpdatedAt = time.Now()
-
-	if err := client.Insert(ctx, cartItem, CartItemTableName); err != nil {
+	response, err := sqlDBClient.CreateCartItem(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Insert", CartItemTableName, err)
 		logrus.Errorf("CreateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	logrus.Infof("CreateCartItem: Successfully created cartItem for productID %s\n", cartItem.ProductID)
+	copyCartItemObj(response.ResponseModel, cartItem)
+	logrus.Infof("CreateCartItem: Successfully created cartItem for cartID %s\n", cartItem.CartID)
 	return http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) GetCartItemByID(ctx context.Context) (int, error) {
-	var (
-		existingCartItem *CartItemTableModel
-		err              error
-	)
-
-	if existingCartItem, _, err = cartItem.getByColumn(ctx, "id", cartItem.ID); err != nil || existingCartItem.ID != cartItem.ID {
-		err := fmt.Errorf("unable to find cartItem with with id: %s. %v", cartItem.ID, err)
-		logrus.Errorf("GetCartItemByCartID: %v\n", err)
-		return http.StatusBadRequest, err
+func (cartItem *CartItemModel) GetCartItemByID(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.GetCartItemByIDRequest{
+		RequestModel: protoModel,
 	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("GetCartItemByID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	defer conn.Close()
 
-	copyCartItemObj(existingCartItem, cartItem)
-
+	response, err := sqlDBClient.GetCartItemByID(ctx, request)
+	if err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
+		logrus.Errorf("GetCartItemByID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	copyCartItemObj(response.ResponseModel, cartItem)
 	return http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) GetCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) GetCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.GetCartItemByCartIDAndProductIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("GetCartItemByCartIDAndProductID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "cartID",
-			RelationType: db.EQUAL,
-			ColumnValue:  cartItem.CartID,
-		},
-		{
-			ColumnName:   "productID",
-			RelationType: db.EQUAL,
-			ColumnValue:  cartItem.ProductID,
-		},
-	}
-	result := CartItemTableModel{}
-	if _, err := client.Read(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result); err != nil {
+	response, err := sqlDBClient.GetCartItemByCartIDAndProductID(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
 		logrus.Errorf("GetCartItemByCartIDAndProductID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-
-	copyCartItemObj(&result, cartItem)
-
+	copyCartItemObj(response.ResponseModel, cartItem)
 	return http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) ListCartItemByCartID(ctx context.Context) ([]CartItemTableModel, int, error) {
-
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) ListCartItemByCartID(ctx context.Context) ([]CartItemModel, int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.ListCartItemByCartIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("ListCartItemByCartID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   "cartID",
-			RelationType: db.EQUAL,
-			ColumnValue:  cartItem.CartID,
-		},
-	}
-	var result []CartItemTableModel
-	if _, err := client.Read(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result); err != nil {
+	response, err := sqlDBClient.ListCartItemByCartID(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
 		logrus.Errorf("ListCartItemByCartID: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
-
+	var result []CartItemModel
+	for _, resp := range response.ResponseModel {
+		result = append(result, *convertProtoCartItemModelToCartItemModel(ctx, resp))
+	}
 	return result, http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) UpdateCartItem(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) UpdateCartItem(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.UpdateCartItemRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("UpdateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	cartItem.UpdatedAt = time.Now()
-
-	if err := client.Update(ctx, cartItem, CartItemTableName, true); err != nil {
+	response, err := sqlDBClient.UpdateCartItem(ctx, request)
+	if err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Update", CartItemTableName, err)
 		logrus.Errorf("UpdateCartItem: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-
+	copyCartItemObj(response.ResponseModel, cartItem)
 	return http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) DeleteCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) DeleteCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.DeleteCartItemByCartIDAndProductIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("DeleteCartItemByCartIDAndProductID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	whereClauses := []db.WhereClauseType{
-		{
-			ColumnName:   "cartID",
-			RelationType: db.EQUAL,
-			ColumnValue:  cartItem.ID,
-		},
-		{
-			ColumnName:   "productID",
-			RelationType: db.EQUAL,
-			ColumnValue:  cartItem.ID,
-		},
-	}
-
-	if err := client.Delete(ctx, cartItem, CartItemTableName, whereClauses); err != nil {
+	if _, err := sqlDBClient.DeleteCartItemByCartIDAndProductID(ctx, request); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
-		logrus.Errorf("DeleteCartItemByID: %v\n", err)
+		logrus.Errorf("DeleteCartItemByCartIDAndProductID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
 
 	return http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) DeleteCartItemByCartID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) DeleteCartItemByCartID(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.DeleteCartItemByCartIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("DeleteCartItemByCartID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
-	whereClauses := []db.WhereClauseType{
-		{
-			ColumnName:   "cartID",
-			RelationType: db.EQUAL,
-			ColumnValue:  cartItem.CartID,
-		},
-	}
+	defer conn.Close()
 
-	if err := client.Delete(ctx, cartItem, CartItemTableName, whereClauses); err != nil {
+	if _, err := sqlDBClient.DeleteCartItemByCartID(ctx, request); err != nil {
 		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
 		logrus.Errorf("DeleteCartItemByCartID: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
+
 	return http.StatusOK, nil
 }
 
-func (cartItem *CartItemTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*CartItemTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+func (cartItem *CartItemModel) DeleteCartItemByProductID(ctx context.Context) (int, error) {
+	protoModel := convertCartItemModelToProtoCartItemModel(ctx, cartItem)
+	request := &proto.DeleteCartItemByProductIDRequest{
+		RequestModel: protoModel,
+	}
+	sqlDBClient, conn, err := common.NewSQLRPCClient(ctx, sqlRPCHost, sqlRPCPort)
 	if err != nil {
-		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
-		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, http.StatusInternalServerError, err
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("DeleteCartItemByProductID: %v\n", err)
+		return http.StatusInternalServerError, err
 	}
-	defer client.Close(ctx)
+	defer conn.Close()
 
-	whereClause := []db.WhereClauseType{
-		{
-			ColumnName:   columnName,
-			RelationType: db.EQUAL,
-			ColumnValue:  columnValue,
-		},
+	if _, err := sqlDBClient.DeleteCartItemByProductID(ctx, request); err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Delete", CartItemTableName, err)
+		logrus.Errorf("DeleteCartItemByProductID: %v\n", err)
+		return http.StatusInternalServerError, err
 	}
-	result := CartItemTableModel{}
 
-	if _, err := client.Read(ctx, CartItemTableName, nil, whereClause, nil, nil, nil, true, &result); err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "Read", CartItemTableName, err)
-		logrus.Errorf("getByColumn: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
-	return &result, http.StatusOK, nil
+	return http.StatusOK, nil
 }
 
-func copyCartItemObj(from, to *CartItemTableModel) {
+func copyCartItemObj(from *proto.CartItemModel, to *CartItemModel) {
 	to.ID = from.ID
 	to.CartID = from.CartID
 	to.ProductID = from.ProductID
-	to.SellerID = from.SellerID
-	to.Quantity = from.Quantity
-	to.Price = from.Price
-	to.Version = from.Version
-	to.CreatedAt = from.CreatedAt
-	to.UpdatedAt = from.UpdatedAt
+	to.Quantity = int(from.Quantity)
+	to.Version = int(from.Version)
+	to.CreatedAt = from.CreatedAt.AsTime()
+	to.UpdatedAt = from.UpdatedAt.AsTime()
+}
+
+func convertCartItemModelToProtoCartItemModel(ctx context.Context, model *CartItemModel) *proto.CartItemModel {
+	return &proto.CartItemModel{
+		ID:        model.ID,
+		CartID:    model.CartID,
+		ProductID: model.ProductID,
+		Quantity:  int32(model.Quantity),
+		Version:   int32(model.Version),
+		CreatedAt: timestamppb.New(model.CreatedAt),
+		UpdatedAt: timestamppb.New(model.CreatedAt),
+	}
+}
+
+func convertProtoCartItemModelToCartItemModel(ctx context.Context, protoModel *proto.CartItemModel) *CartItemModel {
+	return &CartItemModel{
+		ID:        protoModel.ID,
+		CartID:    protoModel.CartID,
+		ProductID: protoModel.ProductID,
+		Quantity:  int(protoModel.Quantity),
+		Version:   int(protoModel.Version),
+		CreatedAt: protoModel.CreatedAt.AsTime(),
+		UpdatedAt: protoModel.UpdatedAt.AsTime(),
+	}
 }

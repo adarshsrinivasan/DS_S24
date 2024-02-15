@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,7 +52,7 @@ func buyerLogin(ctx context.Context, userName, password string) (string, int, er
 		return "", http.StatusForbidden, err
 	}
 
-	return createNewSession(ctx, buyerTableModelObj.Id, common.Buyer)
+	return createNewSession(ctx, buyerTableModelObj.Id, common.BUYER)
 }
 
 func buyerLogout(ctx context.Context, sessionID string) (int, error) {
@@ -83,7 +83,7 @@ func buyerAddProductToCart(ctx context.Context, sessionID string, productModel *
 		logrus.Errorf("buyerAddProductToCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerAddProductToCart: %v\n", err)
 		return http.StatusBadRequest, err
@@ -156,7 +156,7 @@ func buyerRemoveProductToCart(ctx context.Context, sessionID string, productMode
 		logrus.Errorf("buyerRemoveProductToCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerRemoveProductToCart: %v\n", err)
 		return http.StatusBadRequest, err
@@ -197,7 +197,7 @@ func buyerSaveCart(ctx context.Context, sessionID string) (int, error) {
 		logrus.Errorf("buyerSaveCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerSaveCart: %v\n", err)
 		return http.StatusBadRequest, err
@@ -226,7 +226,7 @@ func buyerClearCart(ctx context.Context, sessionID string) (int, error) {
 		logrus.Errorf("buyerClearCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerClearCart: %v\n", err)
 		return http.StatusBadRequest, err
@@ -255,7 +255,7 @@ func buyerGetCart(ctx context.Context, sessionID string) (CartModel, int, error)
 		logrus.Errorf("buyerGetCart: %v\n", err)
 		return CartModel{}, statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerGetCart: %v\n", err)
 		return CartModel{}, http.StatusBadRequest, err
@@ -285,7 +285,7 @@ func buyerProvideProductFeedBack(ctx context.Context, sessionID, productID strin
 		logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
 		return http.StatusBadRequest, err

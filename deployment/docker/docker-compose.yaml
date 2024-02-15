@@ -10,6 +10,7 @@ services:
       POSTGRES_DB: marketplace
     volumes:
       - postgresql-data:/var/lib/postgresql/data
+    # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
 
   pgbouncer:
     image: edoburu/pgbouncer

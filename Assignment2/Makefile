@@ -59,3 +59,13 @@ run-test-latency: build-test-latency
 
 run-test-throughput: build-test-throughput
 	./cmd/test_throughput/test-throughput
+
+build-proto:
+	 protoc \
+ 	--proto_path=$(GOPATH)/src/github.com/adarshsrinivasan/DS_S24/library/proto\
+ 	--plugin=$(GOPATH)/bin/protoc-gen-go-grpc \
+ 	--go_out=$(GOPATH)/src \
+ 	--go-grpc_out=$(GOPATH)/src \
+ 	common.proto \
+ 	nosql-api.proto \
+ 	sql-api.proto

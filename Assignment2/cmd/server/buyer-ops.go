@@ -6,19 +6,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adarshsrinivasan/DS_S24/libraries/common"
+	"github.com/adarshsrinivasan/DS_S24/library/common"
 	"github.com/sirupsen/logrus"
 )
 
 type BuyerModel struct {
 	Id                     string    `json:"id,omitempty" bson:"id" bun:"id,pk"`
 	Name                   string    `json:"name,omitempty" bson:"name" bun:"name,notnull"`
-	NumberOfItemsPurchased int       `json:"numberOfItemsPurchased,omitempty" bson:"numberOfItemsPurchased" bun:"numberOfItemsPurchased"`
 	UserName               string    `json:"userName,omitempty" bson:"userName" bun:"userName,notnull,unique"`
 	Password               string    `json:"password,omitempty" bson:"password" bun:"password,notnull,unique"`
 	Version                int       `json:"version,omitempty" bson:"version" bun:"version,notnull"`
 	CreatedAt              time.Time `json:"createdAt,omitempty"  bson:"createdAt" bun:"createdAt"`
 	UpdatedAt              time.Time `json:"updatedAt,omitempty" bson:"updatedAt" bun:"updatedAt"`
+}
+
+type PurchaseDetailsModel struct {
+	CreditCardNumber string `json:"creditCardNumber,omitempty" bson:"creditCardNumber" bun:"creditCardNumber,pk"`
 }
 
 func createBuyerAccount(ctx context.Context, buyerModel *BuyerModel) (BuyerModel, int, error) {
@@ -27,32 +30,30 @@ func createBuyerAccount(ctx context.Context, buyerModel *BuyerModel) (BuyerModel
 		logrus.Errorf("createSellerAccount: %v\n", err)
 		return BuyerModel{}, http.StatusBadRequest, err
 	}
-	buyerTableModelObj := convertBuyerModelToBuyerTableModel(ctx, buyerModel)
-	buyerTableModelObj.Id = ""
-	if statusCode, err := buyerTableModelObj.CreateBuyer(ctx); err != nil {
+	buyerModel.Id = ""
+	if statusCode, err := buyerModel.CreateBuyer(ctx); err != nil {
 		err := fmt.Errorf("exception while creating Seller. %v", err)
 		logrus.Errorf("createSellerAccount: %v\n", err)
 		return BuyerModel{}, statusCode, err
 	}
-	createdBuyerModel := convertBuyerTableModelToBuyerModel(ctx, buyerTableModelObj)
-	return *createdBuyerModel, http.StatusOK, nil
+	return *buyerModel, http.StatusOK, nil
 }
 
 func buyerLogin(ctx context.Context, userName, password string) (string, int, error) {
-	buyerTableModelObj := BuyerTableModel{UserName: userName}
-	if statusCode, err := buyerTableModelObj.GetBuyerByUserName(ctx); err != nil {
+	buyerModelObj := BuyerModel{UserName: userName}
+	if statusCode, err := buyerModelObj.GetBuyerByUserName(ctx); err != nil {
 		err := fmt.Errorf("exception while fetching Buyer by username %s. %v", userName, err)
 		logrus.Errorf("buyerLogin: %v\n", err)
 		return "", statusCode, err
 	}
 
-	if buyerTableModelObj.Password != password {
+	if buyerModelObj.Password != password {
 		err := fmt.Errorf("worng username/password for username: %s", userName)
 		logrus.Errorf("buyerLogin: %v\n", err)
 		return "", http.StatusForbidden, err
 	}
 
-	return createNewSession(ctx, buyerTableModelObj.Id, common.Buyer)
+	return createNewSession(ctx, buyerModelObj.Id, common.BUYER)
 }
 
 func buyerLogout(ctx context.Context, sessionID string) (int, error) {
@@ -66,16 +67,6 @@ func buyerLogout(ctx context.Context, sessionID string) (int, error) {
 	return deleteSessionByID(ctx, sessionID)
 }
 
-func getSellerRatingBySellerID(ctx context.Context, sellerID string) (int, int, int, error) {
-	sellerTableModelObj := SellerTableModel{Id: sellerID}
-	if statusCode, err := sellerTableModelObj.GetSellerByID(ctx); err != nil {
-		err := fmt.Errorf("exception while fetching Seller by userID %s. %v", sellerID, err)
-		logrus.Errorf("getSellerRatingBySellerID: %v\n", err)
-		return -1, -1, statusCode, err
-	}
-	return sellerTableModelObj.FeedBackThumbsUp, sellerTableModelObj.FeedBackThumbsDown, http.StatusOK, nil
-}
-
 func buyerAddProductToCart(ctx context.Context, sessionID string, productModel *ProductModel) (int, error) {
 	userID, userType, statusCode, err := getUserIDAndTypeFromSessionID(ctx, sessionID)
 	if err != nil {
@@ -83,12 +74,12 @@ func buyerAddProductToCart(ctx context.Context, sessionID string, productModel *
 		logrus.Errorf("buyerAddProductToCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerAddProductToCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		BuyerID: userID,
 	}
 	if _, err := cartTableModel.GetCartByBuyerID(ctx); err != nil {
@@ -112,17 +103,15 @@ func buyerAddProductToCart(ctx context.Context, sessionID string, productModel *
 		ProductID: product.ID,
 		SellerID:  product.SellerID,
 		Quantity:  productModel.Quantity,
-		Price:     product.SalePrice * float32(productModel.Quantity),
 	}
 
 	exists := false
-	existingCartItemModel := CartItemTableModel{
+	existingCartItemModel := CartItemModel{
 		CartID:    cartTableModel.ID,
 		ProductID: product.ID,
 	}
 	if _, err := existingCartItemModel.GetCartItemByCartIDAndProductID(ctx); err == nil {
 		cartItemModel.Quantity += existingCartItemModel.Quantity
-		cartItemModel.Price += existingCartItemModel.Price
 		exists = true
 	}
 
@@ -145,7 +134,6 @@ func buyerAddProductToCart(ctx context.Context, sessionID string, productModel *
 			return statusCode, err
 		}
 	}
-
 	return http.StatusOK, nil
 }
 
@@ -156,12 +144,12 @@ func buyerRemoveProductToCart(ctx context.Context, sessionID string, productMode
 		logrus.Errorf("buyerRemoveProductToCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerRemoveProductToCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		BuyerID: userID,
 	}
 	if _, err := cartTableModel.GetCartByBuyerID(ctx); err != nil {
@@ -180,9 +168,8 @@ func buyerRemoveProductToCart(ctx context.Context, sessionID string, productMode
 		ProductID: product.ID,
 		SellerID:  product.SellerID,
 		Quantity:  productModel.Quantity,
-		Price:     product.SalePrice * float32(productModel.Quantity),
 	}
-	if statusCode, err := removeProductToCart(ctx, &cartItemModel); err != nil {
+	if statusCode, err := removeProductFromCart(ctx, &cartItemModel); err != nil {
 		err := fmt.Errorf("exception while removing Item %s to Cart %s. %v", productModel.ID, cartTableModel.ID, err)
 		logrus.Errorf("buyerRemoveProductToCart: %v\n", err)
 		return statusCode, err
@@ -197,12 +184,12 @@ func buyerSaveCart(ctx context.Context, sessionID string) (int, error) {
 		logrus.Errorf("buyerSaveCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerSaveCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		BuyerID: userID,
 	}
 	if _, err := cartTableModel.GetCartByBuyerID(ctx); err != nil {
@@ -226,12 +213,12 @@ func buyerClearCart(ctx context.Context, sessionID string) (int, error) {
 		logrus.Errorf("buyerClearCart: %v\n", err)
 		return statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerClearCart: %v\n", err)
 		return http.StatusBadRequest, err
 	}
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		BuyerID: userID,
 	}
 	if _, err := cartTableModel.GetCartByBuyerID(ctx); err != nil {
@@ -255,12 +242,12 @@ func buyerGetCart(ctx context.Context, sessionID string) (CartModel, int, error)
 		logrus.Errorf("buyerGetCart: %v\n", err)
 		return CartModel{}, statusCode, err
 	}
-	if userType != common.Buyer {
+	if userType != common.BUYER {
 		err := fmt.Errorf("user not a buyer type: %s", userID)
 		logrus.Errorf("buyerGetCart: %v\n", err)
 		return CartModel{}, http.StatusBadRequest, err
 	}
-	cartTableModel := CartTableModel{
+	cartTableModel := CartModel{
 		BuyerID: userID,
 	}
 	if _, err := cartTableModel.GetCartByBuyerID(ctx); err != nil {
@@ -271,7 +258,7 @@ func buyerGetCart(ctx context.Context, sessionID string) (CartModel, int, error)
 
 	cartModel, statusCode, err := getCartByID(ctx, cartTableModel.ID)
 	if err != nil {
-		err := fmt.Errorf("exception while clear Cart for buyerID %s. %v", userID, err)
+		err := fmt.Errorf("exception while get Cart for buyerID %s. %v", userID, err)
 		logrus.Errorf("buyerGetCart: %v\n", err)
 		return CartModel{}, statusCode, err
 	}
@@ -279,20 +266,9 @@ func buyerGetCart(ctx context.Context, sessionID string) (CartModel, int, error)
 }
 
 func buyerProvideProductFeedBack(ctx context.Context, sessionID, productID string, liked bool) (int, error) {
-	userID, userType, statusCode, err := getUserIDAndTypeFromSessionID(ctx, sessionID)
+	transactionModels, statusCode, err := getTransactionListByBuyerID(ctx, sessionID)
 	if err != nil {
-		err := fmt.Errorf("exception while fetching Session with ID %s. %v", sessionID, err)
-		logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
-		return statusCode, err
-	}
-	if userType != common.Buyer {
-		err := fmt.Errorf("user not a buyer type: %s", userID)
-		logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
-		return http.StatusBadRequest, err
-	}
-	transactionModels, statusCode, err := getTransactionListByBuyerID(ctx, userID)
-	if err != nil {
-		err := fmt.Errorf("exception while fetching Traansaction List for userID %s. %v", userID, err)
+		err := fmt.Errorf("exception while fetching Traansaction List for sessionID %s. %v", sessionID, err)
 		logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
 		return statusCode, err
 	}
@@ -305,20 +281,20 @@ func buyerProvideProductFeedBack(ctx context.Context, sessionID, productID strin
 		}
 	}
 	if !found {
-		err := fmt.Errorf("couldn't find product %s in user's %s purchace history", productID, userID)
+		err := fmt.Errorf("couldn't find product %s in user's %s purchace history", productID, transactionModels[0].BuyerID)
 		logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
 		return statusCode, err
 	}
 
 	if liked {
 		if statusCode, err := incrementProductRating(ctx, productID); err != nil {
-			err := fmt.Errorf("exception while incrementing product %s rating. %v", productID, userID)
+			err := fmt.Errorf("exception while incrementing product %s rating. %v", productID, err)
 			logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
 			return statusCode, err
 		}
 	} else {
 		if statusCode, err := decrementProductRating(ctx, productID); err != nil {
-			err := fmt.Errorf("exception while decrementing product %s rating. %v", productID, userID)
+			err := fmt.Errorf("exception while decrementing product %s rating. %v", productID, err)
 			logrus.Errorf("buyerProvideProductFeedBack: %v\n", err)
 			return statusCode, err
 		}
@@ -327,30 +303,77 @@ func buyerProvideProductFeedBack(ctx context.Context, sessionID, productID strin
 	return http.StatusOK, nil
 }
 
-func convertBuyerModelToBuyerTableModel(ctx context.Context, buyerModel *BuyerModel) *BuyerTableModel {
-	return &BuyerTableModel{
-		Id:                     buyerModel.Id,
-		Name:                   buyerModel.Name,
-		NumberOfItemsPurchased: buyerModel.NumberOfItemsPurchased,
-		UserName:               buyerModel.UserName,
-		Password:               buyerModel.Password,
-		Version:                buyerModel.Version,
-		CreatedAt:              buyerModel.CreatedAt,
-		UpdatedAt:              buyerModel.UpdatedAt,
-	}
-}
+func buyerMakeTransaction(ctx context.Context, sessionID string, purchaseDetailsModel PurchaseDetailsModel) (int, error) {
+	if common.ReturnTrueWithProbability(90) {
+		userID, userType, statusCode, err := getUserIDAndTypeFromSessionID(ctx, sessionID)
+		if err != nil {
+			err := fmt.Errorf("exception while fetching Session with ID %s. %v", sessionID, err)
+			logrus.Errorf("buyerGetCart: %v\n", err)
+			return statusCode, err
+		}
+		if userType != common.BUYER {
+			err := fmt.Errorf("user not a buyer type: %s", userID)
+			logrus.Errorf("buyerGetCart: %v\n", err)
+			return http.StatusBadRequest, err
+		}
+		cartModel, statusCode, err := buyerGetCart(ctx, sessionID)
+		if err != nil {
+			err := fmt.Errorf("exception while Fetching Cart by sessionID %s. %v", sessionID, err)
+			logrus.Errorf("makeTransaction: %v\n", err)
+			return statusCode, err
+		}
 
-func convertBuyerTableModelToBuyerModel(ctx context.Context, buyerTableModel *BuyerTableModel) *BuyerModel {
-	return &BuyerModel{
-		Id:                     buyerTableModel.Id,
-		Name:                   buyerTableModel.Name,
-		NumberOfItemsPurchased: buyerTableModel.NumberOfItemsPurchased,
-		UserName:               buyerTableModel.UserName,
-		Password:               buyerTableModel.Password,
-		Version:                buyerTableModel.Version,
-		CreatedAt:              buyerTableModel.CreatedAt,
-		UpdatedAt:              buyerTableModel.UpdatedAt,
+		for _, item := range cartModel.Items {
+			product, _, err := getProductByID(ctx, item.ProductID)
+			if err != nil {
+				err := fmt.Errorf("exception while fetching product with ID %s. %v", item.ProductID, err)
+				logrus.Errorf("buyerMakeTransaction: %v\n", err)
+				continue
+			}
+
+			if product.Quantity <= item.Quantity {
+				logrus.Infof("buyerMakeTransaction: Attemting to buy %d count of %s product, while only %d count left in stock. Changing purchase quantity to %d.", item.Quantity, product.ID, product.Quantity, product.Quantity)
+				product.Quantity = 0
+				item.Quantity = product.Quantity
+				if statusCode, err := product.DeleteProductByID(ctx); err != nil {
+					err = fmt.Errorf("exception while Deleting Product for ID:%s. %v", product.ID, err)
+					logrus.Errorf("buyerMakeTransaction: %v\n", err)
+					return statusCode, err
+				}
+			} else {
+				product.Quantity -= item.Quantity
+				if statusCode, err := product.UpdateProductByID(ctx); err != nil {
+					err = fmt.Errorf("exception while Updating Product for ID:%s. %v", product.ID, err)
+					logrus.Errorf("buyerMakeTransaction: %v\n", err)
+					return statusCode, err
+				}
+			}
+
+			transaction := TransactionModel{
+				CartID:    item.CartID,
+				ProductID: item.ProductID,
+				BuyerID:   userID,
+				SellerID:  item.SellerID,
+				Quantity:  item.Quantity,
+				Price:     item.Price,
+			}
+
+			if _, err := transaction.CreateTransaction(ctx); err != nil {
+				err := fmt.Errorf("exception while creating Transaction for CartItemID %s. %v", item.ID, err)
+				logrus.Errorf("buyerMakeTransaction: %v\n", err)
+				continue
+			}
+		}
+		if statusCode, err := clearCart(ctx, cartModel.ID); err != nil {
+			err := fmt.Errorf("exception while clear Cart for buyerID %s. %v", userID, err)
+			logrus.Errorf("makeTransaction: %v\n", err)
+			return statusCode, err
+		}
+		return http.StatusOK, nil
+	} else {
+		return http.StatusBadRequest, fmt.Errorf("Transaction failed.")
 	}
+
 }
 
 func validateBuyerModel(ctx context.Context, buyerModel *BuyerModel, create bool) error {
@@ -379,8 +402,5 @@ func validateBuyerModel(ctx context.Context, buyerModel *BuyerModel, create bool
 		return err
 	}
 
-	if create {
-		buyerModel.NumberOfItemsPurchased = 0
-	}
 	return nil
 }
