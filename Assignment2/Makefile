@@ -21,10 +21,10 @@ $(eval $(RUN_ARGS):;@:)
 
 
 
-build-server-seller: build-proto
+build-server-seller:
 	go build -o ./cmd/server/server-seller ./cmd/server
 
-build-server-buyer: build-proto
+build-server-buyer:
 	go build -o ./cmd/server/server-buyer ./cmd/server
 
 build-client-seller:
@@ -33,10 +33,10 @@ build-client-seller:
 build-client-buyer:
 	go build -o ./cmd/buyer/client-buyer ./cmd/buyer
 
-build-sql-server: build-proto
+build-sql-server:
 	go build -o ./cmd/dbapi/sql/sql-server ./cmd/dbapi/sql
 
-build-nosql-server: build-proto
+build-nosql-server:
 	go build -o ./cmd/dbapi/nosql/nosql-server ./cmd/dbapi/nosql
 
 build-test-latency:
@@ -83,8 +83,9 @@ run-test-throughput: build-test-throughput
 
 build-proto:
 	 protoc \
- 	--proto_path=$(GOPATH)/src/github.com/adarshsrinivasan/DS_S24/library/proto\
+ 	--proto_path=../library/proto\
  	--plugin=$(GOPATH)/bin/protoc-gen-go-grpc \
+ 	--plugin=$(GOPATH)/bin/protoc-gen-go \
  	--go_out=$(GOPATH)/src \
  	--go-grpc_out=$(GOPATH)/src \
  	common.proto \

@@ -16,7 +16,8 @@ sudo apt-get install -y \
     gnupg \
     lsb-release \
     git \
-    golang-go
+    golang-go \
+    protobuf-compiler
 
 # Setup Go
 #wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
@@ -27,6 +28,10 @@ echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
 # shellcheck disable=SC1090
 source ~/.bashrc
 mkdir -p $HOME/go $HOME/go/bin $HOME/go/src
+
+#Install protoc go libraries
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 
 # Install Docker
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
@@ -54,7 +59,7 @@ echo "Verifying installations..."
 git --version
 go version
 docker --version
-docker-compose --version
+docker compose --version
 
 function run_command_with_retry() {
     command_to_run="$1"
