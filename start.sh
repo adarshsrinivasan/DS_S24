@@ -7,6 +7,8 @@ printf "Startup script - $1 $2 \n"
 
 IP_PREFIX="10.20.1"
 GO_VERSION="1.19"
+max_attempts=10
+delay_seconds=10
 
 # Install Packages
 sudo apt update -y
@@ -61,30 +63,6 @@ go version
 docker --version
 docker compose --version
 
-function run_command_with_retry() {
-    command_to_run="$1"
-    max_attempts=10
-    delay_seconds=10
-
-    for ((attempt=1; attempt<=max_attempts; attempt++)); do
-        echo "Attempt $attempt: Running '$command_to_run'"
-
-        # Run the command
-        $command_to_run
-
-        # Check the exit status
-        exit_status=$?
-
-        if [ $exit_status -eq 0 ]; then
-            echo "Command succeeded!"
-            break
-        else
-            echo "Command failed. Retrying in $delay_seconds seconds..."
-            sleep $delay_seconds
-        fi
-    done
-}
-
 node_num="$1"
 assignment_num="$2"
 if [ "$node_num" == "0" ]; then
@@ -122,11 +100,40 @@ elif [ "$node_num" == "2" ]; then
   if [ "$assignment_num" == "1" ]; then
       # shellcheck disable=SC2164
       cd /local/repository/Assignment1
-      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-server-seller"
+      for ((attempt=1; attempt<=max_attempts; attempt++)); do
+          echo "Attempt $attempt"
+          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-server-seller
+
+          # Check the exit status
+          exit_status=$?
+
+          if [ $exit_status -eq 0 ]; then
+              echo "Command succeeded!"
+              break
+          else
+              echo "Command failed. Retrying in $delay_seconds seconds..."
+              sleep $delay_seconds
+          fi
+      done
+
   elif [ "$assignment_num" == "2" ]; then
       # shellcheck disable=SC2164
       cd /local/repository/Assignment2
-      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-seller"
+      for ((attempt=1; attempt<=max_attempts; attempt++)); do
+          echo "Attempt $attempt"
+          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-seller
+
+          # Check the exit status
+          exit_status=$?
+
+          if [ $exit_status -eq 0 ]; then
+              echo "Command succeeded!"
+              break
+          else
+              echo "Command failed. Retrying in $delay_seconds seconds..."
+              sleep $delay_seconds
+          fi
+      done
   else
     echo "Error: unrecognized assignment number: $assignment_num"
     exit 1
@@ -137,11 +144,39 @@ elif [ "$node_num" == "3" ]; then
   if [ "$assignment_num" == "1" ]; then
       # shellcheck disable=SC2164
       cd /local/repository/Assignment1
-      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-server-buyer"
+      for ((attempt=1; attempt<=max_attempts; attempt++)); do
+          echo "Attempt $attempt"
+          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-server-buyer
+
+          # Check the exit status
+          exit_status=$?
+
+          if [ $exit_status -eq 0 ]; then
+              echo "Command succeeded!"
+              break
+          else
+              echo "Command failed. Retrying in $delay_seconds seconds..."
+              sleep $delay_seconds
+          fi
+      done
   elif [ "$assignment_num" == "2" ]; then
       # shellcheck disable=SC2164
       cd /local/repository/Assignment2
-      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-buyer"
+      for ((attempt=1; attempt<=max_attempts; attempt++)); do
+          echo "Attempt $attempt"
+          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-buyer
+
+          # Check the exit status
+          exit_status=$?
+
+          if [ $exit_status -eq 0 ]; then
+              echo "Command succeeded!"
+              break
+          else
+              echo "Command failed. Retrying in $delay_seconds seconds..."
+              sleep $delay_seconds
+          fi
+      done
   else
     echo "Error: unrecognized assignment number: $assignment_num"
     exit 1
