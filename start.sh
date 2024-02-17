@@ -6,6 +6,7 @@ set +x
 printf "Startup script - $1 $2 \n"
 
 IP_PREFIX="10.20.1"
+GO_VERSION="1.19"
 
 # Install Packages
 sudo apt update -y
@@ -16,12 +17,12 @@ sudo apt-get install -y \
     gnupg \
     lsb-release \
     git \
-    golang-go \
     protobuf-compiler
 
 # Setup Go
-#wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
-#sudo tar -C /usr/local -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
+wget https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
+rm /tmp/go$GO_VERSION.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export GOPATH=$HOME/go' >> ~/.bashrc
 echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
