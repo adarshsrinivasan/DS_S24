@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/adarshsrinivasan/DS_S24/library/proto"
+	"github.com/adarshsrinivasan/DS_S24/library/wsdl/transaction"
+	"github.com/hooklift/gowsdl/soap"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,6 +24,8 @@ const (
 	NOSQLRPCPortEnv    = "NOSQL_RPC_PORT"
 	SQLSchemaName      = "marketplace"
 	NOSQLSchemaNameEnv = "MONGO_DB"
+	TransactionHostEnv = "TRANSACTION_HOST"
+	TransactionPortEnv = "TRANSACTION_PORT"
 )
 
 var (
@@ -34,7 +38,17 @@ var (
 	sqlRPCPort, _     = strconv.Atoi(common.GetEnv(SQLRPCPortEnv, "50002"))
 	nosqlRPCHost      = common.GetEnv(NOSQLRPCHostEnv, "localhost")
 	nosqlRPCPort, _   = strconv.Atoi(common.GetEnv(NOSQLRPCPortEnv, "50001"))
+	transactionSoapHost      = common.GetEnv(TransactionHostEnv, "localhost")
+	transactionSoapPort, _   = strconv.Atoi(common.GetEnv(TransactionPortEnv, "50003"))
+	transactionService transaction.TransactionServicePortType
 )
+
+func initializeTransactionServiceClient()  {
+	logrus.Infof("initializeTransactionServiceClient: Initializing...\n")
+	client := soap.NewClient(fmt.Sprintf("http://%s:%d", transactionSoapHost, transactionSoapPort))
+	transactionService = transaction.NewTransactionServicePortType(client)
+	logrus.Infof("initializeTransactionServiceClient: Initialized Successfully\n")
+}
 
 func initializeSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeSQLDB: Initializating SQLDB...\n")
@@ -122,6 +136,8 @@ func initialize() error {
 		logrus.Errorf("initialize: %v\n", err)
 		return err
 	}
+
+	initializeTransactionServiceClient()
 
 	logrus.Infof("initialize: Initialization completed Successfully!\n")
 	return nil

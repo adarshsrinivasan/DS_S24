@@ -22,40 +22,40 @@ type AnyURI string
 type NCName string
 
 type TransactionRequest struct {
-	XMLName xml.Name `xml:"http://localhost:50003/TransactionService/ TransactionRequest"`
+	XMLName xml.Name `xml:"http://localhost:50003 TransactionRequest"`
 
 	Name string `xml:"Name,omitempty" json:"Name,omitempty"`
 
-	CreditCardNumber string `xml:"CreditCardNumber,omitempty" json:"CreditCardNumber,omitempty"`
+	CreditCardDetails string `xml:"CreditCardDetails,omitempty" json:"CreditCardDetails,omitempty"`
 
-	Expiry string `xml:"Expiry,omitempty" json:"Expiry,omitempty"`
+	Expiry string `xml:"expiry,omitempty" json:"expiry,omitempty"`
 }
 
 type TransactionResponse struct {
-	XMLName xml.Name `xml:"http://localhost:50003/TransactionService/ TransactionResponse"`
+	XMLName xml.Name `xml:"http://localhost:50003 TransactionResponse"`
 
 	Approved bool `xml:"approved,omitempty" json:"approved,omitempty"`
 }
 
-type TransactionPortType interface {
+type TransactionServicePortType interface {
 	IsTransactionApproved(request *TransactionRequest) (*TransactionResponse, error)
 
 	IsTransactionApprovedContext(ctx context.Context, request *TransactionRequest) (*TransactionResponse, error)
 }
 
-type transactionPortType struct {
+type transactionServicePortType struct {
 	client *soap.Client
 }
 
-func NewTransactionPortType(client *soap.Client) TransactionPortType {
-	return &transactionPortType{
+func NewTransactionServicePortType(client *soap.Client) TransactionServicePortType {
+	return &transactionServicePortType{
 		client: client,
 	}
 }
 
-func (service *transactionPortType) IsTransactionApprovedContext(ctx context.Context, request *TransactionRequest) (*TransactionResponse, error) {
+func (service *transactionServicePortType) IsTransactionApprovedContext(ctx context.Context, request *TransactionRequest) (*TransactionResponse, error) {
 	response := new(TransactionResponse)
-	err := service.client.CallContext(ctx, "IsTransactionApproved", request, response)
+	err := service.client.CallContext(ctx, "http://localhost:50003/isTransactionApproved", request, response)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (service *transactionPortType) IsTransactionApprovedContext(ctx context.Con
 	return response, nil
 }
 
-func (service *transactionPortType) IsTransactionApproved(request *TransactionRequest) (*TransactionResponse, error) {
+func (service *transactionServicePortType) IsTransactionApproved(request *TransactionRequest) (*TransactionResponse, error) {
 	return service.IsTransactionApprovedContext(
 		context.Background(),
 		request,

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/adarshsrinivasan/DS_S24/library/wsdl/transaction"
 	"net/http"
 	"time"
 
@@ -21,7 +22,9 @@ type BuyerModel struct {
 }
 
 type PurchaseDetailsModel struct {
+	Name string `json:"name,omitempty" bson:"name" bun:"name,pk"`
 	CreditCardNumber string `json:"creditCardNumber,omitempty" bson:"creditCardNumber" bun:"creditCardNumber,pk"`
+	Expiry string `json:"expiry,omitempty" bson:"expiry" bun:"expiry,pk"`
 }
 
 func createBuyerAccount(ctx context.Context, buyerModel *BuyerModel) (BuyerModel, int, error) {
@@ -304,7 +307,18 @@ func buyerProvideProductFeedBack(ctx context.Context, sessionID, productID strin
 }
 
 func buyerMakeTransaction(ctx context.Context, sessionID string, purchaseDetailsModel PurchaseDetailsModel) (int, error) {
-	if common.ReturnTrueWithProbability(90) {
+	resp, err := transactionService.IsTransactionApproved(&transaction.TransactionRequest{
+		Name:              purchaseDetailsModel.Name,
+		CreditCardDetails: purchaseDetailsModel.CreditCardNumber,
+		Expiry:            purchaseDetailsModel.Expiry,
+	})
+	if err != nil {
+		err = fmt.Errorf("exception while contacting transaction server. %v\n", err)
+		logrus.Errorf("buyerMakeTransaction: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+
+	if resp.Approved {
 		userID, userType, statusCode, err := getUserIDAndTypeFromSessionID(ctx, sessionID)
 		if err != nil {
 			err := fmt.Errorf("exception while fetching Session with ID %s. %v", sessionID, err)

@@ -1,17 +1,21 @@
-
 SERVER_HOST?=localhost
 SERVER_PORT?=50000
 MONGO_HOST?=localhost
-MONGO_PORT?=27017
+MONGO_PORT?=50001
 MONGO_USERNAME?=admin
 MONGO_PASSWORD?=admin
 MONGO_DB?=marketplace
 POSTGRES_HOST?=localhost
-POSTGRES_PORT?=5432
+POSTGRES_PORT?=50002
 POSTGRES_USERNAME?=admin
 POSTGRES_PASSWORD?=admin
 POSTGRES_DB?=marketplace
 POSTGRES_MAX_CONN?=500
+
+# use the rest as arguments
+RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# ...and turn them into do-nothing targets
+$(eval $(RUN_ARGS):;@:)
 
 
 build-server-seller:
@@ -34,11 +38,11 @@ build-test-throughput:
 
 build-all: build-server-seller build-server-buyer build-client-seller build-client-buyer build-test-latency build-test-throughput
 
-run-postgres:
+run-sql-server:
 	docker compose -f ../deployment/docker/docker-compose.yaml up -d postgres pgbouncer
 	docker compose -f ../deployment/docker/docker-compose.yaml ps
 
-run-mongo:
+run-nosql-server:
 	docker compose -f ../deployment/docker/docker-compose.yaml up -d mongodb
 	docker compose -f ../deployment/docker/docker-compose.yaml ps
 
@@ -55,7 +59,16 @@ run-client-buyer: build-client-buyer
 	./cmd/buyer/client-buyer
 
 run-test-latency: build-test-latency
-	./cmd/test_latency/test-latency
+	./cmd/test_latency/test-latency $(RUN_ARGS)
 
 run-test-throughput: build-test-throughput
-	./cmd/test_throughput/test-throughput
+	./cmd/test_throughput/test-throughput $(RUN_ARGS)
+ 	
+clean:
+	docker compose -f ../deployment/docker/docker-compose.yaml down -v || true
+	rm -rf ./cmd/server/server-seller || true
+	rm -rf ./cmd/server/server-buyer || true
+	rm -rf ./cmd/seller/client-seller || true
+	rm -rf ./cmd/buyer/client-buyer || true
+	rm -rf ./cmd/test_latency/test-latency || true
+	rm -rf ./cmd/test_throughput/test-throughput || true 

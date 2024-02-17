@@ -130,7 +130,9 @@ type TransactionModel struct {
 }
 
 type PurchaseDetailsModel struct {
+	Name string `json:"name,omitempty" bson:"name" bun:"name,pk"`
 	CreditCardNumber string `json:"creditCardNumber,omitempty" bson:"creditCardNumber" bun:"creditCardNumber,pk"`
+	Expiry string `json:"expiry,omitempty" bson:"expiry" bun:"expiry,pk"`
 }
 
 type SellerModel struct {

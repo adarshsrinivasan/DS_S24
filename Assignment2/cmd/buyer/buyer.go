@@ -172,9 +172,17 @@ func userBuyerOptions() error {
 		}
 	case "9":
 		// Make Purchase
+		fmt.Println("Enter name")
+		name, _ := common.ReadTrimString(reader)
 		fmt.Println("Enter card number")
 		cardNumber, _ := common.ReadTrimString(reader)
-		request := PurchaseDetailsModel{CreditCardNumber: cardNumber}
+		fmt.Println("Enter expiry date (MM/YYYY)")
+		expiry, _ := common.ReadTrimString(reader)
+		request := PurchaseDetailsModel{
+			Name:             name,
+			CreditCardNumber: cardNumber,
+			Expiry:           expiry,
+		}
 		url := fmt.Sprintf("%s/makePurchase", baseURL)
 		_, err := common.MakeHTTPRequest[PurchaseDetailsModel, string](ctx, "POST", url, sessionID, request, true)
 		if err != nil {

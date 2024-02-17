@@ -1,49 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<wsdl:definitions
-	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" ...>
-	<wsdl:types>
-		<xsd:schema
-			xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://your.namespace">
-			<xsd:complexType name="TransactionRequest">
-				<xsd:sequence>
-					<xsd:element name="Name" type="xsd:string" />
-					<xsd:element name="CreditCardNumber" type="xsd:string" />
-					<xsd:element name="ExpiryDate" type="xsd:string" />
-				</xsd:sequence>
-			</xsd:complexType>
-			<xsd:complexType name="TransactionResponse">
-				<xsd:sequence>
-					<xsd:element name="Approved" type="xsd:boolean" />
-				</xsd:sequence>
-			</xsd:complexType>
-		</xsd:schema>
-	</wsdl:types>
-	<wsdl:service name="TransactionService">
-		<wsdl:port name="TransactionPort" binding="tns:TransactionBinding">
-			<wsdl:soapbinding transport="http://schemas.xmlsoap.org/soap/http" />
-			<wsdl:operation name="IsTransactionApproved">
-				<wsdl:input message="tns:IsTransactionApprovedRequest">
-					<wsdl:soapbody use="literal" parts="tns:TransactionRequest" />
-				</wsdl:input>
-				<wsdl:output message="tns:IsTransactionApprovedResponse">
-					<wsdl:soapbody use="literal" parts="tns:TransactionResponse" />
-				</wsdl:output>
-			</wsdl:operation>
-		</wsdl:port>
-	</wsdl:service>
-	<wsdl:message name="IsTransactionApprovedRequest">
-		<wsdl:part name="TransactionRequest" element="http://your.namespace:TransactionRequest" />
-	</wsdl:message>
-	<wsdl:message name="IsTransactionApprovedResponse">
-		<wsdl:part name="TransactionResponse" element="http://your.namespace:TransactionResponse" />
-	</wsdl:message>
-	<wsdl:binding name="TransactionBinding" type="tns:Transaction">
-		<wsdl:soapbinding style="document" />
-	</wsdl:binding>
-	<wsdl:portType name="Transaction">
-		<wsdl:operation name="IsTransactionApproved">
-			<wsdl:input message="tns:IsTransactionApprovedRequest" />
-			<wsdl:output message="tns:IsTransactionApprovedResponse" />
-		</wsdl:operation>
-	</wsdl:portType>
-</wsdl:definitions>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+			 xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+			 xmlns:tns="http://localhost:50003"
+			 targetNamespace="http://localhost:50003">
+
+	<!-- Types -->
+	<types>
+		<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://localhost:50003">
+			<element name="TransactionRequest">
+				<complexType>
+					<sequence>
+						<element name="Name" type="string"/>
+						<element name="CreditCardDetails" type="string"/>
+						<element name="expiry" type="string"/>
+					</sequence>
+				</complexType>
+			</element>
+
+			<element name="TransactionResponse">
+				<complexType>
+					<sequence>
+						<element name="approved" type="boolean"/>
+					</sequence>
+				</complexType>
+			</element>
+		</schema>
+	</types>
+
+	<!-- Message -->
+	<message name="isTransactionApprovedRequest">
+		<part name="parameters" element="tns:TransactionRequest"/>
+	</message>
+
+	<message name="isTransactionApprovedResponse">
+		<part name="parameters" element="tns:TransactionResponse"/>
+	</message>
+
+	<!-- Port Type -->
+	<portType name="TransactionServicePortType">
+		<operation name="isTransactionApproved">
+			<input message="tns:isTransactionApprovedRequest"/>
+			<output message="tns:isTransactionApprovedResponse"/>
+		</operation>
+	</portType>
+
+	<!-- Binding -->
+	<binding name="TransactionServiceSOAPBinding" type="tns:TransactionServicePortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<operation name="isTransactionApproved">
+			<soap:operation soapAction="http://localhost:50003/isTransactionApproved"/>
+			<input>
+				<soap:body use="literal"/>
+			</input>
+			<output>
+				<soap:body use="literal"/>
+			</output>
+		</operation>
+	</binding>
+
+	<!-- Service -->
+	<service name="TransactionService">
+		<port name="TransactionServicePort" binding="tns:TransactionServiceSOAPBinding">
+			<soap:address location="http://localhost:50003"/>
+		</port>
+	</service>
+
+</definitions>

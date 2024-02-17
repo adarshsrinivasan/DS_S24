@@ -3,7 +3,7 @@
 set +x
 
 # shellcheck disable=SC2059
-printf "Startup script - $1 \n"
+printf "Startup script - $1 $2 \n"
 
 IP_PREFIX="10.20.1"
 
@@ -56,82 +56,190 @@ go version
 docker --version
 docker-compose --version
 
+function run_command_with_retry() {
+    command_to_run="$1"
+    max_attempts=10
+    delay_seconds=10
+
+    for ((attempt=1; attempt<=max_attempts; attempt++)); do
+        echo "Attempt $attempt: Running '$command_to_run'"
+
+        # Run the command
+        $command_to_run
+
+        # Check the exit status
+        exit_status=$?
+
+        if [ $exit_status -eq 0 ]; then
+            echo "Command succeeded!"
+            break
+        else
+            echo "Command failed. Retrying in $delay_seconds seconds..."
+            sleep $delay_seconds
+        fi
+    done
+}
+
 node_num="$1"
+assignment_num="$2"
 if [ "$node_num" == "0" ]; then
   echo "Launching Postgres..."
-  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml up -d postgres pgbouncer
-  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml ps
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      make run-sql-server
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.1 SERVER_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-sql-server
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
   echo "Postgres Launch Complete..."
 elif [ "$node_num" == "1" ]; then
   echo "Launching MongoDB..."
-  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml up -d mongodb
-  docker compose -f /local/repository/Assignment1/deployment/docker/docker-compose.yaml ps
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      make run-nosql-server
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.2 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace make run-nosql-server
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
   echo "MongoDB Launch Complete..."
 elif [ "$node_num" == "2" ]; then
   echo "Launching Server-Seller..."
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/server/
-  rm server-seller || true
-  go build -o server-seller .
-  IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/server/server-seller
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-server-seller"
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-seller"
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
   echo "Server-Seller Launch Complete..."
 elif [ "$node_num" == "3" ]; then
   echo "Launching Server-Buyer..."
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/server/
-  rm server-buyer || true
-  go build -o server-buyer .
-  IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/server/server-buyer
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-server-buyer"
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      run_command_with_retry "IP_PREFIX=10.20.1 SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-buyer"
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
   echo "Server-Buyer Launch Complete..."
 elif [ "$node_num" == "4" ]; then
   echo "Launching Client-Seller..."
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/seller/
-  rm client-seller || true
-  go build -o client-seller .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/seller/client-seller
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-client-seller
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 make run-client-seller
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
   echo "Client-Seller Launch Complete..."
 elif [ "$node_num" == "5" ]; then
   echo "Launching Client-Buyer..."
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/buyer/
-  rm client-buyer || true
-  go build -o client-buyer .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/buyer/client-buyer
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-client-buyer
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-client-buyer
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
   echo "Client-Buyer Launch Complete..."
 elif [ "$node_num" == "6" ]; then
-  echo "Setting-up Test-Buyer..."
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/test_latency/
-  rm test-latency || true
-  go build -o test-latency .
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/test_throughput/
-  rm test-throughput || true
-  go build -o test-throughput .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 1 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 10 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 100 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 1 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 10 0
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 100 0
-  echo "Test-Buyer Setup Complete..."
+    echo "Launching Transaction-Server..."
+    if [ "$assignment_num" == "1" ]; then
+        # shellcheck disable=SC2164
+        cd /local/repository/Assignment1
+        #NO-OP :)
+    elif [ "$assignment_num" == "2" ]; then
+        # shellcheck disable=SC2164
+        cd /local/repository/Assignment2
+        IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.7 SERVER_PORT=50000 make run-server-transaction
+    else
+      echo "Error: unrecognized assignment number: $assignment_num"
+      exit 1
+    fi
+    echo "Transaction-Server Launch Complete..."
 elif [ "$node_num" == "7" ]; then
+  echo "Setting-up Test-Buyer..."
+  if [ "$assignment_num" == "1" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment1
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-latency 1 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-latency 10 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-latency 100 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-throughput 1 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-throughput 10 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-throughput 100 0
+      echo ":)"
+  elif [ "$assignment_num" == "2" ]; then
+      # shellcheck disable=SC2164
+      cd /local/repository/Assignment2
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-latency 1 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-latency 10 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-latency 100 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-throughput 1 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-throughput 10 0
+      #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-throughput 100 0
+      echo ":)"
+  else
+    echo "Error: unrecognized assignment number: $assignment_num"
+    exit 1
+  fi
+  echo "Test-Buyer Setup Complete..."
+elif [ "$node_num" == "8" ]; then
   echo "Setting-up Test-Seller.."
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/test_latency/
-  rm test-latency || true
-  go build -o test-latency .
-  # shellcheck disable=SC2164
-  cd /local/repository/Assignment1/cmd/test_throughput/
-  rm test-throughput || true
-  go build -o test-throughput .
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 1 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 10 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_latency/test-latency 100 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 1 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 10 1
-  #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 /local/repository/Assignment1/cmd/test_throughput/test-throughput 100 1
+  if [ "$assignment_num" == "1" ]; then
+        # shellcheck disable=SC2164
+        cd /local/repository/Assignment1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-latency 1 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-latency 10 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-latency 100 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-throughput 1 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-throughput 10 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=27017 MONGO_USERNAME=admin MONGO_PASSWORD=admin MONGO_DB=marketplace POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=5432 POSTGRES_USERNAME=admin POSTGRES_PASSWORD=admin POSTGRES_DB=marketplace POSTGRES_MAX_CONN=500 make run-test-throughput 100 1
+        echo ":)"
+    elif [ "$assignment_num" == "2" ]; then
+        # shellcheck disable=SC2164
+        cd /local/repository/Assignment2
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-latency 1 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-latency 10 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-latency 100 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-throughput 1 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-throughput 10 1
+        #IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 make run-test-throughput 100 1
+        echo ":)"
+    else
+      echo "Error: unrecognized assignment number: $assignment_num"
+      exit 1
+    fi
   echo "Testr-Seller Setup Complete..."
 else
   echo "Invalid Node Number $node_num"
