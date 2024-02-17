@@ -121,7 +121,7 @@ elif [ "$node_num" == "2" ]; then
       cd /local/repository/Assignment2
       for ((attempt=1; attempt<=max_attempts; attempt++)); do
           echo "Attempt $attempt"
-          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-seller
+          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.3 SERVER_PORT=50000 NOSQL_RPC_HOST=$IP_PREFIX.2 NOSQL_RPC_PORT=50000  SQL_RPC_HOST=$IP_PREFIX.1 SQL_RPC_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-seller
 
           # Check the exit status
           exit_status=$?
@@ -164,7 +164,7 @@ elif [ "$node_num" == "3" ]; then
       cd /local/repository/Assignment2
       for ((attempt=1; attempt<=max_attempts; attempt++)); do
           echo "Attempt $attempt"
-          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 MONGO_HOST=$IP_PREFIX.2 MONGO_PORT=50000  POSTGRES_HOST=$IP_PREFIX.1 POSTGRES_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-buyer
+          IP_PREFIX="10.20.1" SERVER_HOST=$IP_PREFIX.4 SERVER_PORT=50000 NOSQL_RPC_HOST=$IP_PREFIX.2 NOSQL_RPC_PORT=50000  SQL_RPC_HOST=$IP_PREFIX.1 SQL_RPC_PORT=50000 TRANSACTION_HOST=$IP_PREFIX.7 TRANSACTION_PORT=50000 make run-server-buyer
 
           # Check the exit status
           exit_status=$?
