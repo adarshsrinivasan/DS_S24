@@ -20,7 +20,7 @@ sudo apt-get install -y \
     protobuf-compiler
 
 # Setup Go
-sudo m -rf /usr/local/go /tmp/go$GO_VERSION.linux-amd64.tar.gz || true
+sudo rm -rf /usr/local/go /tmp/go$GO_VERSION.linux-amd64.tar.gz || true
 wget https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
 sudo tar -C /usr/local/ -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
 rm /tmp/go$GO_VERSION.linux-amd64.tar.gz
