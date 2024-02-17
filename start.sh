@@ -32,6 +32,9 @@ source ~/.bashrc
 mkdir -p $HOME/go $HOME/go/bin $HOME/go/src
 
 #Install protoc go libraries
+export PATH=$PATH:/usr/local/go/bin
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 
