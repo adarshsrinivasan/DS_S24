@@ -20,12 +20,11 @@ sudo apt-get install -y \
     protobuf-compiler
 
 # Setup Go
+sudo m -rf /usr/local/go /tmp/go$GO_VERSION.linux-amd64.tar.gz || true
 wget https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go$GO_VERSION.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
+sudo tar -C /usr/local/ -xzf /tmp/go$GO_VERSION.linux-amd64.tar.gz
 rm /tmp/go$GO_VERSION.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-echo 'export GOPATH=$HOME/go' >> ~/.bashrc
-echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
+(echo 'export PATH=$PATH:/usr/local/go/bin'; echo 'export GOPATH=$HOME/go'; echo 'export PATH=$PATH:$GOPATH/bin') >> ~/.bashrc
 # shellcheck disable=SC1090
 source ~/.bashrc
 mkdir -p $HOME/go $HOME/go/bin $HOME/go/src
