@@ -41,7 +41,7 @@ type SellerTableModel struct {
 }
 
 func CreateSellerTable(ctx context.Context) error {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSellerTable: %v\n", err)
@@ -79,7 +79,7 @@ func CreateSellerTable(ctx context.Context) error {
 }
 
 func (seller *SellerTableModel) CreateSeller(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSellerTable: %v\n", err)
@@ -142,7 +142,7 @@ func (seller *SellerTableModel) GetSellerByUserName(ctx context.Context) (int, e
 }
 
 func (seller *SellerTableModel) UpdateSellerByID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("UpdateSellerByID: %v\n", err)
@@ -161,7 +161,7 @@ func (seller *SellerTableModel) UpdateSellerByID(ctx context.Context) (int, erro
 }
 
 func (seller *SellerTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*SellerTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("UpdateSellerByID: %v\n", err)

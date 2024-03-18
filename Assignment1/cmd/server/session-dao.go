@@ -37,7 +37,7 @@ type SessionTableModel struct {
 }
 
 func CreateSessionTable(ctx context.Context) error {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSessionTable: %v\n", err)
@@ -57,7 +57,7 @@ func CreateSessionTable(ctx context.Context) error {
 }
 
 func (session *SessionTableModel) CreateSession(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateSession: %v\n", err)
@@ -112,7 +112,7 @@ func (session *SessionTableModel) GetSessionByUserID(ctx context.Context) (int, 
 }
 
 func (session *SessionTableModel) DeleteSessionByID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteSessionByID: %v\n", err)
@@ -136,7 +136,7 @@ func (session *SessionTableModel) DeleteSessionByID(ctx context.Context) (int, e
 }
 
 func (session *SessionTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*SessionTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteSessionByID: %v\n", err)

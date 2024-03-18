@@ -36,7 +36,7 @@ var (
 
 func initializeSQLDB(ctx context.Context) error {
 	logrus.Infof("initializeSQLDB: Initializating SQLDB...\n")
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("initializeSQLDB: %v\n", err)

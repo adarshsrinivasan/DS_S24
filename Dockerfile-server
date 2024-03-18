@@ -1,0 +1,47 @@
+# Use official Golang image as the base image
+FROM golang:1.19-alpine3.18 AS builder
+
+#Golang env setup
+RUN mkdir -p /development/src/github.com/adarshsrinivasan/DS_S24/server /development/src/github.com/adarshsrinivasan/DS_S24/library /development/bin
+RUN export GOPATH=/development
+RUN export GOROOT=/usr/local/go
+RUN export PATH=$PATH:$GOPATH/bin
+RUN export PATH=$PATH:$GOROOT/bin
+
+# Set the current working directory inside the container
+WORKDIR /development/src/github.com/adarshsrinivasan/DS_S24
+
+# Copy files
+COPY go.mod .
+COPY go.sum .
+COPY library ./library/
+COPY ./Assignment4/cmd/server .
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
+
+# Build the Go app
+RUN go build -o main .
+
+# Start a new stage from scratch
+FROM alpine:3.18
+
+# Set environment variables
+## app Env vars
+ENV SERVER_HOST: 0.0.0.0
+ENV SERVER_PORT: 50000
+ENV NOSQL_RPC_HOST: product-db
+ENV NOSQL_RPC_PORT: 50003
+ENV SQL_RPC_HOST: customer-db
+ENV SQL_RPC_PORT: 50002
+ENV TRANSACTION_HOST: transaction-service
+ENV TRANSACTION_PORT: 50004
+
+# Expose port
+EXPOSE 50000
+
+# Copy the compiled Go binary from the builder stage into this new stage
+COPY --from=builder /development/src/github.com/adarshsrinivasan/DS_S24/main /app/main
+
+# Run the Go binary
+CMD ["/app/main"]

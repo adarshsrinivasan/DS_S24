@@ -39,7 +39,7 @@ type BuyerTableModel struct {
 }
 
 func CreateBuyerTable(ctx context.Context) error {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateBuyerTable: %v\n", err)
@@ -75,7 +75,7 @@ func CreateBuyerTable(ctx context.Context) error {
 }
 
 func (buyer *BuyerTableModel) CreateBuyer(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateBuyer: %v\n", err)
@@ -138,7 +138,7 @@ func (buyer *BuyerTableModel) GetBuyerByUserName(ctx context.Context) (int, erro
 }
 
 func (buyer *BuyerTableModel) UpdateBuyerByID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("UpdateBuyerByID: %v\n", err)
@@ -158,7 +158,7 @@ func (buyer *BuyerTableModel) UpdateBuyerByID(ctx context.Context) (int, error) 
 }
 
 func (buyer *BuyerTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*BuyerTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("getByColumn: %v\n", err)

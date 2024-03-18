@@ -27,12 +27,12 @@ type clientObj struct {
 const (
 	MongoHostEnv     = "MONGO_HOST"
 	MongoPortEnv     = "MONGO_PORT"
-	MongoUsernameEnv = "MONGO_USERNAME"
+	MongoUsernameEnv = "MONGO_USER"
 	MongoPasswordEnv = "MONGO_PASSWORD"
 	MongoDbEnv       = "MONGO_DB"
 )
 
-func NewNoSQLClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+func getNoSQLClient(ctx context.Context, applicationName string) (*mongo.Client, error) {
 	host := common.GetEnv(MongoHostEnv, "localhost")
 	port := common.GetEnv(MongoPortEnv, "27017")
 	username := common.GetEnv(MongoUsernameEnv, "admin")
@@ -42,12 +42,29 @@ func NewNoSQLClient(ctx context.Context, applicationName, schemaName string) (*c
 		Username: username,
 		Password: password,
 	}
-	client, err := mongo.Connect(ctx,
-		options.Client().
-			ApplyURI(fmt.Sprintf("mongodb://%s:%s", host, port)),
-		options.Client().
-			SetAuth(credential).
-			SetAppName(applicationName))
+	option := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s", host, port)).
+		SetAuth(credential).
+		SetAppName(applicationName)
+	return mongo.Connect(ctx, option)
+}
+
+func VerifyNoSQLConnection(ctx context.Context) error {
+	client, err := getNoSQLClient(ctx, "")
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to mongo DB: %v", err)
+		logrus.Errorf("VerifyNoSQLConnection: %v\n", err)
+		return err
+	}
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		err = fmt.Errorf("exception while pinging mongo DB: %v", err)
+		logrus.Errorf("VerifyNoSQLConnection: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func NewNoSQLClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+	client, err := getNoSQLClient(ctx, applicationName)
 	if err != nil {
 		err = fmt.Errorf("exception while connecting to mongo DB: %v", err)
 		logrus.Errorf("NewNoSQLClient: %v\n", err)

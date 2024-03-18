@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 
 	myproto "github.com/adarshsrinivasan/DS_S24/library/proto"
@@ -108,4 +109,14 @@ func MaxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func SplitNodeNames(nodeNames string) []string {
+	return strings.Split(nodeNames, ",")
+}
+
+func GetRandomHostAndPort(nodeNamesList, ports []string) (string, int) {
+	ind := rand.Intn(len(nodeNamesList))
+	port, _ := strconv.Atoi(ports[ind])
+	return nodeNamesList[ind], port
 }

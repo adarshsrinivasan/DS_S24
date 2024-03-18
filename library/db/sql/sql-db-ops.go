@@ -28,7 +28,7 @@ type clientObj struct {
 const (
 	PostgresHostEnv     = "POSTGRES_HOST"
 	PostgresPortEnv     = "POSTGRES_PORT"
-	PostgresUsernameEnv = "POSTGRES_USERNAME"
+	PostgresUsernameEnv = "POSTGRES_USER"
 	PostgresPasswordEnv = "POSTGRES_PASSWORD"
 	PostgresDbEnv       = "POSTGRES_DB"
 	PostgresMaxConnEnv  = "POSTGRES_MAX_CONN"
@@ -52,14 +52,36 @@ func getClient(ctx context.Context, applicationName, schemaName string) (*client
 		poolObj = &connPool{}
 		if err := poolObj.initialize(ctx, applicationName, schemaName, maxConn); err != nil {
 			err = fmt.Errorf("exception while initializing SQL connection pool. %v", err)
-			logrus.Errorf("NewClient: %v\n", err)
+			logrus.Errorf("NewSQLClient: %v\n", err)
 			return nil, err
 		}
 	}
 	return poolObj.getClient(ctx), nil
 }
 
-func NewClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+func VerifySQLConnection(ctx context.Context) error {
+	host := common.GetEnv(PostgresHostEnv, "localhost")
+	port := common.GetEnv(PostgresPortEnv, "5432")
+	username := common.GetEnv(PostgresUsernameEnv, "admin")
+	password := common.GetEnv(PostgresPasswordEnv, "admin")
+	dbName := common.GetEnv(PostgresDbEnv, "marketplace")
+
+	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, username, password, dbName))
+	if err != nil {
+		err = fmt.Errorf("exception while opening postgres connection: %v", err)
+		logrus.Errorf("VerifySQLConnection: %v\n", err)
+		return err
+	}
+	if err = db.Ping(); err != nil {
+		err = fmt.Errorf("exception while pinging postgres connection: %v", err)
+		logrus.Errorf("VerifySQLConnection: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func NewSQLClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
 	host := common.GetEnv(PostgresHostEnv, "localhost")
 	port := common.GetEnv(PostgresPortEnv, "5432")
 	username := common.GetEnv(PostgresUsernameEnv, "admin")
@@ -85,7 +107,7 @@ func NewClient(ctx context.Context, applicationName, schemaName string) (*client
 		host, port, username, password, dbName))
 	if err != nil {
 		err = fmt.Errorf("exception while opening postgres connection: %v", err)
-		logrus.Errorf("NewClient: %v\n", err)
+		logrus.Errorf("NewSQLClient: %v\n", err)
 		return nil, err
 	}
 	bunDBObj := bun.NewDB(sqldb, pgdialect.New())
@@ -137,7 +159,7 @@ func (client *clientObj) Initialize(ctx context.Context, schemaName string) erro
 }
 
 func (client *clientObj) VerifyConnection(ctx context.Context) error {
-	logrus.Debugf("VerifyConnection: Varifying SQL DB CLient...\n")
+	logrus.Debugf("VerifySQLConnection: Varifying SQL DB CLient...\n")
 	if client.bunClient == nil {
 		return fmt.Errorf("database connection not initialized")
 	}

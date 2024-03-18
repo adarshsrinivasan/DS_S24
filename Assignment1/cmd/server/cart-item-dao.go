@@ -44,7 +44,7 @@ type CartItemTableModel struct {
 
 func CreateCartItemTable(ctx context.Context) error {
 
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateCartItemTable: %v\n", err)
@@ -79,7 +79,7 @@ func CreateCartItemTable(ctx context.Context) error {
 }
 
 func (cartItem *CartItemTableModel) CreateCartItem(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateCartItem: %v\n", err)
@@ -119,7 +119,7 @@ func (cartItem *CartItemTableModel) GetCartItemByID(ctx context.Context) (int, e
 }
 
 func (cartItem *CartItemTableModel) GetCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("GetCartItemByCartIDAndProductID: %v\n", err)
@@ -153,7 +153,7 @@ func (cartItem *CartItemTableModel) GetCartItemByCartIDAndProductID(ctx context.
 
 func (cartItem *CartItemTableModel) ListCartItemByCartID(ctx context.Context) ([]CartItemTableModel, int, error) {
 
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("ListCartItemByCartID: %v\n", err)
@@ -179,7 +179,7 @@ func (cartItem *CartItemTableModel) ListCartItemByCartID(ctx context.Context) ([
 }
 
 func (cartItem *CartItemTableModel) UpdateCartItem(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("UpdateCartItem: %v\n", err)
@@ -199,7 +199,7 @@ func (cartItem *CartItemTableModel) UpdateCartItem(ctx context.Context) (int, er
 }
 
 func (cartItem *CartItemTableModel) DeleteCartItemByCartIDAndProductID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteCartItemByCartIDAndProductID: %v\n", err)
@@ -230,7 +230,7 @@ func (cartItem *CartItemTableModel) DeleteCartItemByCartIDAndProductID(ctx conte
 }
 
 func (cartItem *CartItemTableModel) DeleteCartItemByCartID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteCartItemByCartID: %v\n", err)
@@ -254,7 +254,7 @@ func (cartItem *CartItemTableModel) DeleteCartItemByCartID(ctx context.Context) 
 }
 
 func (cartItem *CartItemTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*CartItemTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("getByColumn: %v\n", err)

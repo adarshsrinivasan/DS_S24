@@ -2,12 +2,12 @@ SERVER_HOST?=localhost
 SERVER_PORT?=50000
 MONGO_HOST?=localhost
 MONGO_PORT?=50001
-MONGO_USERNAME?=admin
+MONGO_USER?=admin
 MONGO_PASSWORD?=admin
 MONGO_DB?=marketplace
 POSTGRES_HOST?=localhost
 POSTGRES_PORT?=50002
-POSTGRES_USERNAME?=admin
+POSTGRES_USER?=admin
 POSTGRES_PASSWORD?=admin
 POSTGRES_DB?=marketplace
 POSTGRES_MAX_CONN?=500
@@ -51,13 +51,13 @@ build-transaction-server:
 build-all: build-sql-server build-nosql-server build-transaction-server build-server-seller build-server-buyer build-client-seller build-client-buyer build-test-latency build-test-throughput
 
 run-sql-server: build-sql-server
-	docker compose -f ../deployment/docker/docker-compose.yaml up -d postgres pgbouncer
-	docker compose -f ../deployment/docker/docker-compose.yaml ps
+	docker compose  up -d postgres pgbouncer
+	docker compose  ps
 	./cmd/dbapi/sql/sql-server
 
 run-nosql-server: build-nosql-server
-	docker compose -f ../deployment/docker/docker-compose.yaml up -d mongodb
-	docker compose -f ../deployment/docker/docker-compose.yaml ps
+	docker compose  up -d mongodb
+	docker compose  ps
 	./cmd/dbapi/nosql/nosql-server
 
 run-server-transaction: build-transaction-server
@@ -93,7 +93,7 @@ build-proto:
  	sql-api.proto
 
 clean:
-	docker compose -f ../deployment/docker/docker-compose.yaml down -v || true
+	docker compose down -v || true
 	rm -rf ./cmd/dbapi/sql/sql-server || true
 	rm -rf ./cmd/dbapi/nosql/nosql-server || true
 	rm -rf ./cmd/transaction/transaction-server || true

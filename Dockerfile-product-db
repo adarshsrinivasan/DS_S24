@@ -1,0 +1,55 @@
+# Use official Golang image as the base image
+FROM golang:1.19 AS builder
+
+#Golang env setup
+RUN mkdir -p /development/src/github.com/adarshsrinivasan/DS_S24/nosql /development/src/github.com/adarshsrinivasan/DS_S24/library /development/bin
+RUN export GOPATH=/development
+RUN export GOROOT=/usr/local/go
+RUN export PATH=$PATH:$GOPATH/bin
+RUN export PATH=$PATH:$GOROOT/bin
+
+# Set the current working directory inside the container
+WORKDIR /development/src/github.com/adarshsrinivasan/DS_S24
+
+# Copy files
+COPY go.mod .
+COPY go.sum .
+COPY library ./library/
+COPY ./Assignment4/cmd/dbapi/nosql .
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
+
+# Build the Go app
+RUN go build -o main .
+
+# Start a new stage from scratch
+FROM mongo:latest
+
+# Set environment variables
+## Mongo Env vars
+ENV MONGO_INITDB_ROOT_USERNAME: admin
+ENV MONGO_INITDB_ROOT_PASSWORD: admin
+
+## app Env vars
+ENV SERVER_HOST: 0.0.0.0
+ENV SERVER_PORT: 50003
+ENV MONGO_HOST: localhost
+ENV MONGO_PORT: 27017
+ENV MONGO_USER: admin
+ENV MONGO_PASSWORD: admin
+ENV MONGO_DB: marketplace
+
+# Expose port
+EXPOSE 50003
+
+# Copy the compiled Go binary from the builder stage into this new stage
+COPY --from=builder /development/src/github.com/adarshsrinivasan/DS_S24/main /app/main
+
+# Copy Supervisor configuration file
+COPY ./Assignment4/cmd/dbapi/nosql/start.sh .
+
+RUN chmod +x start.sh
+
+# Run the Go binary
+CMD ["./start.sh"]

@@ -2,12 +2,12 @@ SERVER_HOST?=localhost
 SERVER_PORT?=50000
 MONGO_HOST?=localhost
 MONGO_PORT?=50001
-MONGO_USERNAME?=admin
+MONGO_USER?=admin
 MONGO_PASSWORD?=admin
 MONGO_DB?=marketplace
 POSTGRES_HOST?=localhost
 POSTGRES_PORT?=50002
-POSTGRES_USERNAME?=admin
+POSTGRES_USER?=admin
 POSTGRES_PASSWORD?=admin
 POSTGRES_DB?=marketplace
 POSTGRES_MAX_CONN?=500
@@ -39,12 +39,12 @@ build-test-throughput:
 build-all: build-server-seller build-server-buyer build-client-seller build-client-buyer build-test-latency build-test-throughput
 
 run-sql-server:
-	docker compose -f ../deployment/docker/docker-compose.yaml up -d postgres pgbouncer
-	docker compose -f ../deployment/docker/docker-compose.yaml ps
+	docker compose -d postgres pgbouncer
+	docker compose ps
 
 run-nosql-server:
-	docker compose -f ../deployment/docker/docker-compose.yaml up -d mongodb
-	docker compose -f ../deployment/docker/docker-compose.yaml ps
+	docker compose up -d mongodb
+	docker compose ps
 
 run-server-seller: build-server-seller
 	./cmd/server/server-seller
@@ -65,7 +65,7 @@ run-test-throughput: build-test-throughput
 	./cmd/test_throughput/test-throughput $(RUN_ARGS)
  	
 clean:
-	docker compose -f ../deployment/docker/docker-compose.yaml down -v || true
+	docker compose down -v || true
 	rm -rf ./cmd/server/server-seller || true
 	rm -rf ./cmd/server/server-buyer || true
 	rm -rf ./cmd/seller/client-seller || true

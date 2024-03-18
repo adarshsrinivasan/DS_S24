@@ -39,7 +39,7 @@ type CartTableModel struct {
 
 func CreateCartTable(ctx context.Context) error {
 
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateCartTable: %v\n", err)
@@ -68,7 +68,7 @@ func CreateCartTable(ctx context.Context) error {
 }
 
 func (cart *CartTableModel) CreateCart(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateCart: %v\n", err)
@@ -125,7 +125,7 @@ func (cart *CartTableModel) GetCartByBuyerID(ctx context.Context) (int, error) {
 }
 
 func (cart *CartTableModel) UpdateCartByID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("UpdateCartByID: %v\n", err)
@@ -145,7 +145,7 @@ func (cart *CartTableModel) UpdateCartByID(ctx context.Context) (int, error) {
 }
 
 func (cart *CartTableModel) DeleteCartByID(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("DeleteCartByID: %v\n", err)
@@ -170,7 +170,7 @@ func (cart *CartTableModel) DeleteCartByID(ctx context.Context) (int, error) {
 }
 
 func (cart *CartTableModel) getByColumn(ctx context.Context, columnName string, columnValue interface{}) (*CartTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("getByColumn: %v\n", err)

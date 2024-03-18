@@ -1,0 +1,125 @@
+version: '3'
+
+services:
+  customer-db1:
+    image: adarshzededa/customer-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-customer-db
+    restart: always
+    ports:
+      - "50002:50002"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_MAX_CONN: 500
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50002
+      NODE_NAME: customer-db1
+      PEER_NODE_NAMES: customer-db1
+    networks:
+      - marketplace-network
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
+
+  product-db1:
+    image: adarshzededa/product-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-product-db
+    restart: always
+    ports:
+      - "50003:50003"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_HOST: localhost
+      MONGO_PORT: 27017
+      MONGO_USER: admin
+      MONGO_PASSWORD: admin
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50003
+      MONGO_DB: marketplace
+      NODE_NAME: product-db1
+      PEER_NODE_NAMES: product-db1
+    networks:
+      - marketplace-network
+    volumes:
+      - mongodb_data:/data/db
+
+  transaction-service:
+    image: adarshzededa/transaction-service:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-transaction-service
+    restart: always
+    ports:
+      - "50004:50004"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50004
+      NODE_NAME: transaction-service
+    networks:
+      - marketplace-network
+
+  server-seller1:
+    image: adarshzededa/server-seller:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    depends_on:
+      - product-db1
+      - customer-db1
+      - transaction-service
+    ports:
+      - "50000:50000"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50000
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-seller1
+      NOSQL_NODE_NAMES: product-db1
+      NOSQL_NODE_PORTS: 50003
+      SQL_NODE_NAMES: customer-db1
+      SQL_NODE_PORTS: 50002
+    networks:
+      - marketplace-network
+
+
+  server-buyer1:
+    image: adarshzededa/server-buyer:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50001:50001"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50001
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-buyer1
+      NOSQL_NODE_NAMES: product-db1
+      NOSQL_NODE_PORTS: 50003
+      SQL_NODE_NAMES: customer-db1
+      SQL_NODE_PORTS: 50002
+    networks:
+      - marketplace-network
+
+
+# Add volumes definition
+volumes:
+  postgresql-data:
+    driver: local
+  mongodb_data:
+    driver: local
+
+networks:
+  marketplace-network:

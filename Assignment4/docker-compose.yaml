@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    ports:
+      - "5432:5432"
+    depends_on:
+      - postgres
+    environment:
+      ADMIN_USERS: admin
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: marketplace
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 300
+      AUTH_TYPE: plain
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+
+
+# Add volumes definition to create volume mysql-data referenced above
+volumes:
+  postgresql-data:
+    driver: local
+  mongodb_data:
+    driver: local
+
+networks:
+  postgres-network:
+    driver: bridge

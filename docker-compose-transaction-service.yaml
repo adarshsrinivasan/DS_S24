@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  transaction-service:
+    image: adarshzededa/transaction-service:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-transaction-service
+    restart: always
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50004
+      NODE_NAME: transaction-service
+    network_mode: "host"

@@ -29,7 +29,7 @@ var (
 
 func initializeSQLDB(ctx context.Context, serviceName, schemaName string) error {
 	log.Infof("initializeSQLDB: Initializating SQLDB...\n")
-	client, err := sql.NewClient(ctx, serviceName, schemaName)
+	client, err := sql.NewSQLClient(ctx, serviceName, schemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		log.Errorf("initializeSQLDB: %v\n", err)

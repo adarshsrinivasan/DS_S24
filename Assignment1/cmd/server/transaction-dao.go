@@ -44,7 +44,7 @@ type TransactionTableModel struct {
 }
 
 func CreateTransactionTable(ctx context.Context) error {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateTransactionTable: %v\n", err)
@@ -85,7 +85,7 @@ func CreateTransactionTable(ctx context.Context) error {
 }
 
 func (transaction *TransactionTableModel) CreateTransaction(ctx context.Context) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("CreateTransaction: %v\n", err)
@@ -132,7 +132,7 @@ func (transaction *TransactionTableModel) DeleteTransactionsByBuyerID(ctx contex
 }
 
 func (transaction *TransactionTableModel) listByColumn(ctx context.Context, columnName string, columnValue interface{}) ([]TransactionTableModel, int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("listByColumn: %v\n", err)
@@ -157,7 +157,7 @@ func (transaction *TransactionTableModel) listByColumn(ctx context.Context, colu
 }
 
 func (transaction *TransactionTableModel) deleteByColumn(ctx context.Context, columnName string, columnValue interface{}) (int, error) {
-	client, err := sql.NewClient(ctx, ServiceName, SQLSchemaName)
+	client, err := sql.NewSQLClient(ctx, ServiceName, SQLSchemaName)
 	if err != nil {
 		err = fmt.Errorf("exception while creating SQLDB client. %v", err)
 		logrus.Errorf("deleteByColumn: %v\n", err)
