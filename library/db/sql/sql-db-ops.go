@@ -46,42 +46,7 @@ var (
 	poolObj *connPool
 )
 
-func getClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
-	maxConn, _ := strconv.Atoi(common.GetEnv(PostgresMaxConnEnv, "500"))
-	if poolObj == nil {
-		poolObj = &connPool{}
-		if err := poolObj.initialize(ctx, applicationName, schemaName, maxConn); err != nil {
-			err = fmt.Errorf("exception while initializing SQL connection pool. %v", err)
-			logrus.Errorf("NewSQLClient: %v\n", err)
-			return nil, err
-		}
-	}
-	return poolObj.getClient(ctx), nil
-}
-
-func VerifySQLConnection(ctx context.Context) error {
-	host := common.GetEnv(PostgresHostEnv, "localhost")
-	port := common.GetEnv(PostgresPortEnv, "5432")
-	username := common.GetEnv(PostgresUsernameEnv, "admin")
-	password := common.GetEnv(PostgresPasswordEnv, "admin")
-	dbName := common.GetEnv(PostgresDbEnv, "marketplace")
-
-	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, username, password, dbName))
-	if err != nil {
-		err = fmt.Errorf("exception while opening postgres connection: %v", err)
-		logrus.Errorf("VerifySQLConnection: %v\n", err)
-		return err
-	}
-	if err = db.Ping(); err != nil {
-		err = fmt.Errorf("exception while pinging postgres connection: %v", err)
-		logrus.Errorf("VerifySQLConnection: %v\n", err)
-		return err
-	}
-	return nil
-}
-
-func NewSQLClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+func getSQLClient(ctx context.Context, applicationName, schemaName string) *bun.DB {
 	host := common.GetEnv(PostgresHostEnv, "localhost")
 	port := common.GetEnv(PostgresPortEnv, "5432")
 	username := common.GetEnv(PostgresUsernameEnv, "admin")
@@ -102,14 +67,6 @@ func NewSQLClient(ctx context.Context, applicationName, schemaName string) (*cli
 	sqldb.SetConnMaxIdleTime(DefaultIdleTimeouts)
 	sqldb.SetMaxIdleConns(maxConn)
 	sqldb.SetMaxOpenConns(maxConn)
-
-	_, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, username, password, dbName))
-	if err != nil {
-		err = fmt.Errorf("exception while opening postgres connection: %v", err)
-		logrus.Errorf("NewSQLClient: %v\n", err)
-		return nil, err
-	}
 	bunDBObj := bun.NewDB(sqldb, pgdialect.New())
 	logrusObj := logrus.New()
 	logrusObj.SetFormatter(&logrus.TextFormatter{DisableQuote: true})
@@ -122,8 +79,29 @@ func NewSQLClient(ctx context.Context, applicationName, schemaName string) (*cli
 		MessageTemplate: "{{.Operation}}[{{.Duration}}]: {{.Query}}",
 		ErrorTemplate:   "{{.Operation}}[{{.Duration}}]: {{.Query}}: {{.Error}}",
 	}))
+	return bunDBObj
+}
+
+func VerifySQLConnection(ctx context.Context) error {
+	dbName := common.GetEnv(PostgresDbEnv, "marketplace")
+	sqldb := getSQLClient(ctx, dbName, dbName)
+	if err := sqldb.Ping(); err != nil {
+		err = fmt.Errorf("exception while pinging postgres connection: %v", err)
+		logrus.Errorf("VerifySQLConnection: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func NewSQLClient(ctx context.Context, applicationName, schemaName string) (*clientObj, error) {
+	sqldb := getSQLClient(ctx, applicationName, schemaName)
+	if err := sqldb.Ping(); err != nil {
+		err = fmt.Errorf("exception while pinging postgres: %v", err)
+		logrus.Errorf("NewSQLClient: %v\n", err)
+		return nil, err
+	}
 	client := &clientObj{
-		bunClient: bunDBObj,
+		bunClient: sqldb,
 	}
 
 	return client, nil

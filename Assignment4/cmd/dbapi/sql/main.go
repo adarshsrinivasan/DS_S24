@@ -14,8 +14,11 @@ import (
 )
 
 const (
-	ServerHostEnv = "SERVER_HOST"
-	ServerPortEnv = "SERVER_PORT"
+	ServerHostEnv    = "SERVER_HOST"
+	ServerPortEnv    = "SERVER_PORT"
+	SQLSchemaNameEnv = "POSTGRES_DB"
+
+	ServiceName = "server"
 )
 
 var (
@@ -26,7 +29,7 @@ var (
 	nodeName      = common.GetEnv(common.NodeNameEnv, "sql-server")
 	peerNodeNames = common.SplitNodeNames(common.GetEnv(common.PeerNodeNamesEnv, "sql-server1,sql-server2,sql-server3,sql-server4,sql-server5"))
 	serviceName   string
-	schemaName    string
+	schemaName    = common.GetEnv(SQLSchemaNameEnv, "marketplace")
 )
 
 func initializeSQLDB(ctx context.Context, serviceName, schemaName string) error {
@@ -90,10 +93,8 @@ func initializeDB(ctx context.Context, serviceName, schemaName string) error {
 	return nil
 }
 
-func initialize(ctx context.Context, receivedServiceName, receivedSchemaName string) error {
+func initialize(ctx context.Context, serviceName, schemaName string) error {
 	log.Infof("initialize: Initializating...\n")
-	serviceName = receivedServiceName
-	schemaName = receivedSchemaName
 	if err := initializeDB(ctx, serviceName, schemaName); err != nil {
 		err = fmt.Errorf("exception while initializing DBs. %v", err)
 		log.Errorf("initialize: %v\n", err)
@@ -130,6 +131,11 @@ func main() {
 
 	if err := verifyDBConnections(ctx); err != nil {
 		err = fmt.Errorf("exception while verifying DB connections.... %v", err)
+		log.Panicf("main: %v\n", err)
+	}
+
+	if err := initialize(ctx, ServiceName, schemaName); err != nil {
+		err = fmt.Errorf("exception while initializing DB.... %v", err)
 		log.Panicf("main: %v\n", err)
 	}
 

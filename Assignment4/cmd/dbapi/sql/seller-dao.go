@@ -57,23 +57,23 @@ func CreateSellerTable(ctx context.Context) error {
 		return err
 	}
 
-	seller := SellerTableModel{
-		Name:               "admin",
-		FeedBackThumbsUp:   0,
-		FeedBackThumbsDown: 0,
-		NumberOfItemsSold:  0,
-		UserName:           "admin",
-		Password:           "admin",
-	}
-
-	if statusCode, err := seller.CreateSeller(ctx); err != nil {
-		err := fmt.Errorf("exception while inserting the admin Seller. %v", err)
-		if statusCode == http.StatusBadRequest {
-			return nil
-		}
-		logrus.Errorf("CreateSellerTable: %v. StatusCode: %v\n", statusCode, err)
-		return err
-	}
+	//seller := SellerTableModel{
+	//	Name:               "admin",
+	//	FeedBackThumbsUp:   0,
+	//	FeedBackThumbsDown: 0,
+	//	NumberOfItemsSold:  0,
+	//	UserName:           "admin",
+	//	Password:           "admin",
+	//}
+	//
+	//if statusCode, err := seller.CreateSeller(ctx); err != nil {
+	//	err := fmt.Errorf("exception while inserting the admin Seller. %v", err)
+	//	if statusCode == http.StatusBadRequest {
+	//		return nil
+	//	}
+	//	logrus.Errorf("CreateSellerTable: %v. StatusCode: %v\n", statusCode, err)
+	//	return err
+	//}
 
 	return nil
 }

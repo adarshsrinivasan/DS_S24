@@ -24,7 +24,7 @@ RUN go mod download
 RUN go build -o main .
 
 # Start a new stage from scratch
-FROM postgres:latest
+FROM postgres:16.2
 
 # Install Supervisor
 RUN apt-get update && apt-get install -y supervisor

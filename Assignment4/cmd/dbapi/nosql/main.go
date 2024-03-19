@@ -14,18 +14,21 @@ import (
 )
 
 const (
-	ServiceName   = "server"
-	ServerHostEnv = "SERVER_HOST"
-	ServerPortEnv = "SERVER_PORT"
+	ServerHostEnv      = "SERVER_HOST"
+	ServerPortEnv      = "SERVER_PORT"
+	NOSQLSchemaNameEnv = "MONGO_DB"
+
+	ServiceName = "server"
 )
 
 var (
-	err           error
-	ctx           context.Context
-	serverHost    = common.GetEnv(ServerHostEnv, "localhost")
-	serverPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50001"))
-	nodeName      = common.GetEnv(common.NodeNameEnv, "nosql-server")
-	peerNodeNames = common.SplitNodeNames(common.GetEnv(common.PeerNodeNamesEnv, "nosql-server1,nosql-server2,nosql-server3,nosql-server4,nosql-server5"))
+	err             error
+	ctx             context.Context
+	serverHost      = common.GetEnv(ServerHostEnv, "localhost")
+	serverPort, _   = strconv.Atoi(common.GetEnv(ServerPortEnv, "50001"))
+	nosqlSchemaName = common.GetEnv(NOSQLSchemaNameEnv, "marketplace")
+	nodeName        = common.GetEnv(common.NodeNameEnv, "nosql-server")
+	peerNodeNames   = common.SplitNodeNames(common.GetEnv(common.PeerNodeNamesEnv, "nosql-server1,nosql-server2,nosql-server3,nosql-server4,nosql-server5"))
 )
 
 func initializeNOSQLDB(ctx context.Context, serviceName, schemaName string) error {
@@ -96,6 +99,11 @@ func main() {
 
 	if err := verifyDBConnections(ctx); err != nil {
 		err = fmt.Errorf("exception while verifying DB connections.... %v", err)
+		log.Panicf("main: %v\n", err)
+	}
+
+	if err := initialize(ctx, ServiceName, nosqlSchemaName); err != nil {
+		err = fmt.Errorf("exception while initializing DB.... %v", err)
 		log.Panicf("main: %v\n", err)
 	}
 

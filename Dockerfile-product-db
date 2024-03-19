@@ -24,7 +24,7 @@ RUN go mod download
 RUN go build -o main .
 
 # Start a new stage from scratch
-FROM mongo:latest
+FROM mongo:4.4.6
 
 # Set environment variables
 ## Mongo Env vars
