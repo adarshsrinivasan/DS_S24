@@ -28,7 +28,7 @@ var (
 	serverPort, _   = strconv.Atoi(common.GetEnv(ServerPortEnv, "50001"))
 	nosqlSchemaName = common.GetEnv(NOSQLSchemaNameEnv, "marketplace")
 	nodeName        = common.GetEnv(common.NodeNameEnv, "nosql-server")
-	peerNodeNames   = common.SplitNodeNames(common.GetEnv(common.PeerNodeNamesEnv, "nosql-server1,nosql-server2,nosql-server3,nosql-server4,nosql-server5"))
+	peerNodeNames   = common.SplitCSV(common.GetEnv(common.PeerNodeNamesEnv, "nosql-server1,nosql-server2,nosql-server3,nosql-server4,nosql-server5"))
 )
 
 func initializeNOSQLDB(ctx context.Context, serviceName, schemaName string) error {

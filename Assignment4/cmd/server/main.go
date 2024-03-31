@@ -34,19 +34,19 @@ var (
 )
 
 func getSQLHostNameAndPort() (string, int) {
-	sqlNodeNames := common.SplitNodeNames(common.GetEnv(common.SQLNodeNamesEnv, "localhost"))
-	sqlNodePorts := common.SplitNodeNames(common.GetEnv(common.SQLNodePortsEnv, "50002"))
-	nodeName, port := common.GetRandomHostAndPort(sqlNodeNames, sqlNodePorts)
-	logrus.Infof("getSQLHostName: HostName: %s, Port: %d\n", nodeName, port)
-	return nodeName, port
+	sqlNodeNames := common.SplitCSV(common.GetEnv(common.SQLNodeNamesEnv, "localhost"))
+	sqlNodePorts := common.SplitCSV(common.GetEnv(common.SQLNodePortsEnv, "50002"))
+	sqlNodeName, sqlNodePort := common.GetRandomHostAndPort(sqlNodeNames, sqlNodePorts)
+	logrus.Infof("getSQLHostName: HostName: %s, Port: %d\n", sqlNodeName, sqlNodePort)
+	return sqlNodeName, sqlNodePort
 }
 
 func getNOSQLHostNameAndPort() (string, int) {
-	nosqlNodeNames := common.SplitNodeNames(common.GetEnv(common.NOSQLNodeNamesEnv, "localhost"))
-	nosqlNodePorts := common.SplitNodeNames(common.GetEnv(common.NOSQLNodePortsEnv, "50003"))
-	nodeName, port := common.GetRandomHostAndPort(nosqlNodeNames, nosqlNodePorts)
-	logrus.Infof("getNOSQLHostNameAndPort: HostName: %s, Port: %d\n", nodeName, port)
-	return nodeName, port
+	nosqlNodeNames := common.SplitCSV(common.GetEnv(common.NOSQLNodeNamesEnv, "localhost"))
+	nosqlNodePorts := common.SplitCSV(common.GetEnv(common.NOSQLNodePortsEnv, "50003"))
+	nosqlNodeName, nosqlNodePort := common.GetRandomHostAndPort(nosqlNodeNames, nosqlNodePorts)
+	logrus.Infof("getNOSQLHostNameAndPort: HostName: %s, Port: %d\n", nosqlNodeName, nosqlNodePort)
+	return nosqlNodeName, nosqlNodePort
 }
 
 func initializeTransactionServiceClient() {

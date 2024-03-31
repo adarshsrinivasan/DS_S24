@@ -29,6 +29,7 @@ build-server-buyer:
 
 build-client-seller:
 	go build -o ./cmd/seller/client-seller ./cmd/seller
+	#env GOOS=linux GOARCH=amd64 go build -o ./cmd/seller/client-seller ./cmd/seller
 
 build-client-buyer:
 	go build -o ./cmd/buyer/client-buyer ./cmd/buyer

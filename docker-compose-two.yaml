@@ -7,9 +7,9 @@ services:
     build:
       dockerfile: ./Dockerfile-customer-db
     restart: always
-    #    ports:
-    #      - "50002:50002"
-    #      - "60002:60002"
+#    ports:
+#      - "50002:50002"
+#      - "60002:60002"
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -22,13 +22,41 @@ services:
       SYNC_HOST: 0.0.0.0
       SYNC_PORT: 60002
       NODE_NAME: customer-db1
-      PEER_NODE_NAMES: customer-db1
-      PEER_NODE_PORTS: 60002
+      PEER_NODE_NAMES: customer-db1,customer-db2
+      PEER_NODE_PORTS: 60002,60002
     networks:
       - marketplace-network
     volumes:
       - postgresql-data:/var/lib/postgresql/data
     # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
+
+  customer-db2:
+    image: adarshzededa/customer-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-customer-db
+    restart: always
+#    ports:
+#      - "50002:50002"
+#      - "60002:60002"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_MAX_CONN: 500
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50002
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60002
+      NODE_NAME: customer-db2
+      PEER_NODE_NAMES: customer-db1,customer-db2
+      PEER_NODE_PORTS: 60002,60002
+    networks:
+      - marketplace-network
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
 
   product-db1:
     image: adarshzededa/product-db:latest
@@ -90,8 +118,8 @@ services:
       NODE_NAME: server-seller1
       NOSQL_NODE_NAMES: product-db1
       NOSQL_NODE_PORTS: 50003
-      SQL_NODE_NAMES: customer-db1
-      SQL_NODE_PORTS: 50002
+      SQL_NODE_NAMES: customer-db1,customer-db2
+      SQL_NODE_PORTS: 50002,50002
     networks:
       - marketplace-network
 

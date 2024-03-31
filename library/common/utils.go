@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -111,7 +112,7 @@ func MaxInt(a, b int) int {
 	return b
 }
 
-func SplitNodeNames(nodeNames string) []string {
+func SplitCSV(nodeNames string) []string {
 	return strings.Split(nodeNames, ",")
 }
 
@@ -119,4 +120,8 @@ func GetRandomHostAndPort(nodeNamesList, ports []string) (string, int) {
 	ind := rand.Intn(len(nodeNamesList))
 	port, _ := strconv.Atoi(ports[ind])
 	return nodeNamesList[ind], port
+}
+
+func GenerateUUID() string {
+	return uuid.New().String()
 }

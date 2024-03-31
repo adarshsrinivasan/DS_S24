@@ -17,8 +17,13 @@ const (
 	ServerHostEnv    = "SERVER_HOST"
 	ServerPortEnv    = "SERVER_PORT"
 	SQLSchemaNameEnv = "POSTGRES_DB"
+	PeerNodeNamesEnv = "PEER_NODE_NAMES"
+	PeerNodePortsEnv = "PEER_NODE_PORTS"
+	SyncHostEnv      = "SYNC_HOST"
+	SyncPortEnv      = "SYNC_PORT"
 
-	ServiceName = "server"
+	ServiceName  = "server"
+	NodeNameBase = "customer-db"
 )
 
 var (
@@ -26,8 +31,11 @@ var (
 	ctx           context.Context
 	serverHost    = common.GetEnv(ServerHostEnv, "localhost")
 	serverPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50002"))
+	syncHost      = common.GetEnv(SyncHostEnv, "localhost")
+	syncPort, _   = strconv.Atoi(common.GetEnv(SyncPortEnv, "60002"))
 	nodeName      = common.GetEnv(common.NodeNameEnv, "sql-server")
-	peerNodeNames = common.SplitNodeNames(common.GetEnv(common.PeerNodeNamesEnv, "sql-server1,sql-server2,sql-server3,sql-server4,sql-server5"))
+	peerNodeNames = common.SplitCSV(common.GetEnv(PeerNodeNamesEnv, fmt.Sprintf("%s1,%s2,%s3,%s4,%s5", NodeNameBase, NodeNameBase, NodeNameBase, NodeNameBase, NodeNameBase)))
+	peerNodePorts = common.SplitCSV(common.GetEnv(PeerNodePortsEnv, "50000,50000,50000,50000,50000"))
 	serviceName   string
 	schemaName    = common.GetEnv(SQLSchemaNameEnv, "marketplace")
 )
@@ -138,6 +146,8 @@ func main() {
 		err = fmt.Errorf("exception while initializing DB.... %v", err)
 		log.Panicf("main: %v\n", err)
 	}
+
+	go listenFromPeers(ctx)
 
 	log.Println("Server Listening ...")
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", serverHost, serverPort))

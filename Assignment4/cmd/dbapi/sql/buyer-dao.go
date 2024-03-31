@@ -54,20 +54,20 @@ func CreateBuyerTable(ctx context.Context) error {
 		return err
 	}
 
-	//buyer := BuyerTableModel{
-	//	Name:     "admin",
-	//	UserName: "admin",
-	//	Password: "admin",
-	//}
-	//
-	//if statusCode, err := buyer.CreateBuyer(ctx); err != nil {
-	//	err := fmt.Errorf("exception while inserting the admin Buyer. %v", err)
-	//	if statusCode == http.StatusBadRequest {
-	//		return nil
-	//	}
-	//	logrus.Errorf("CreateBuyerTable: %v. StatusCode: %v\n", statusCode, err)
-	//	return err
-	//}
+	buyer := BuyerTableModel{
+		Name:     "admin",
+		UserName: "admin",
+		Password: "admin",
+	}
+
+	if statusCode, err := buyer.CreateBuyer(ctx); err != nil {
+		err := fmt.Errorf("exception while inserting the admin Buyer. %v", err)
+		if statusCode == http.StatusBadRequest {
+			return nil
+		}
+		logrus.Errorf("CreateBuyerTable: %v. StatusCode: %v\n", statusCode, err)
+		return err
+	}
 
 	return nil
 }
