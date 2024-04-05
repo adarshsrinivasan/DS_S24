@@ -878,20 +878,26 @@ func initRaftServer(ctx context.Context, id string, peerNodeNames, peerNodePorts
 	ready := make(chan interface{})
 	raftServer = NewServer(id, peerNodeNames, storage, ready, commitChans)
 	raftServer.Serve()
+	connected := map[string]bool{}
 	// Connect all peers to each other.
-	for i := 0; i < len(peerNodeNames); i++ {
-		if getNodeName(i+1) != id {
-			addr := net.JoinHostPort(peerNodeNames[i], peerNodePorts[i])
-			for j := 0; j < Connect_retry_count; j++ {
+	for j := 0; j < Connect_retry_count; j++ {
+		for i := 0; i < len(peerNodeNames); i++ {
+			if getNodeName(i+1) != id && !connected[getNodeName(i+1)] {
+				addr := net.JoinHostPort(peerNodeNames[i], peerNodePorts[i])
 				if err := raftServer.ConnectToPeer(getNodeName(i+1), "tcp", addr); err != nil {
-					log.Errorf("initRaftServer(%s): exception while connecting to %s. Retry no: %d out of %d. %v", id, addr, (j + 1), Connect_retry_count, err)
-					time.Sleep(Connect_retry_cooloff_seconds * time.Second)
+					log.Errorf("initRaftServer(%s): exception while connecting to %s. %v", id, addr, err)
 				} else {
+					connected[getNodeName(i+1)] = true
 					log.Infof("initRaftServer(%s): connected successfully to %s", id, addr)
 					break
 				}
 			}
 		}
+		if len(connected) == (len(peerNodeNames) - 1) {
+			log.Infof("initRaftServer(%s): connected successfully to all peers!", id)
+			break
+		}
+		log.Warnf("initRaftServer(%s): not connedted to all peers. Retry no. %d out of %d", id, (j + 1), Connect_retry_count)
 	}
 	close(ready)
 	go handleCommit(ctx, commitChans)
