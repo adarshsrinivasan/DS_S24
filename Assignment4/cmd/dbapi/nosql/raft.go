@@ -898,6 +898,7 @@ func initRaftServer(ctx context.Context, id string, peerNodeNames, peerNodePorts
 			break
 		}
 		log.Warnf("initRaftServer(%s): not connedted to all peers. Retry no. %d out of %d", id, (j + 1), Connect_retry_count)
+		time.Sleep(Connect_retry_cooloff_seconds * time.Second)
 	}
 	close(ready)
 	go handleCommit(ctx, commitChans)
