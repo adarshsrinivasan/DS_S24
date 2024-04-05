@@ -1,6 +1,9 @@
 # github.com/buger/goterm v1.0.3
 ## explicit; go 1.15
 github.com/buger/goterm
+# github.com/fortytw2/leaktest v1.3.0
+## explicit
+github.com/fortytw2/leaktest
 # github.com/golang/protobuf v1.5.3
 ## explicit; go 1.9
 github.com/golang/protobuf/jsonpb

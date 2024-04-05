@@ -4,11 +4,14 @@ type UserType int
 
 const (
 	NodeNameEnv       = "NODE_NAME"
-	PeerNodeNamesEnv  = "PEER_NODE_NAMES"
 	SQLNodeNamesEnv   = "SQL_NODE_NAMES"
 	SQLNodePortsEnv   = "SQL_NODE_PORTS"
 	NOSQLNodeNamesEnv = "NOSQL_NODE_NAMES"
 	NOSQLNodePortsEnv = "NOSQL_NODE_PORTS"
+	PeerNodeNamesEnv  = "PEER_NODE_NAMES"
+	PeerNodePortsEnv  = "PEER_NODE_PORTS"
+	SyncHostEnv       = "SYNC_HOST"
+	SyncPortEnv       = "SYNC_PORT"
 )
 const (
 	BUYER UserType = iota

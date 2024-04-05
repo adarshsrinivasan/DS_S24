@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NOSQLServiceClient interface {
 	Initialize(ctx context.Context, in *InitializeRequest, opts ...grpc.CallOption) (*InitializeResponse, error)
+	GetLeader(ctx context.Context, in *GetLeaderRequest, opts ...grpc.CallOption) (*GetLeaderResponse, error)
 	// ProductModel APIs
 	CreateProduct(ctx context.Context, in *CreateProductRequest, opts ...grpc.CallOption) (*CreateProductResponse, error)
 	GetProductByID(ctx context.Context, in *GetProductByIDRequest, opts ...grpc.CallOption) (*GetProductByIDResponse, error)
@@ -43,6 +44,15 @@ func NewNOSQLServiceClient(cc grpc.ClientConnInterface) NOSQLServiceClient {
 func (c *nOSQLServiceClient) Initialize(ctx context.Context, in *InitializeRequest, opts ...grpc.CallOption) (*InitializeResponse, error) {
 	out := new(InitializeResponse)
 	err := c.cc.Invoke(ctx, "/proto.NOSQLService/Initialize", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nOSQLServiceClient) GetLeader(ctx context.Context, in *GetLeaderRequest, opts ...grpc.CallOption) (*GetLeaderResponse, error) {
+	out := new(GetLeaderResponse)
+	err := c.cc.Invoke(ctx, "/proto.NOSQLService/GetLeader", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +118,7 @@ func (c *nOSQLServiceClient) DeleteProductByID(ctx context.Context, in *DeletePr
 // for forward compatibility
 type NOSQLServiceServer interface {
 	Initialize(context.Context, *InitializeRequest) (*InitializeResponse, error)
+	GetLeader(context.Context, *GetLeaderRequest) (*GetLeaderResponse, error)
 	// ProductModel APIs
 	CreateProduct(context.Context, *CreateProductRequest) (*CreateProductResponse, error)
 	GetProductByID(context.Context, *GetProductByIDRequest) (*GetProductByIDResponse, error)
@@ -124,6 +135,9 @@ type UnimplementedNOSQLServiceServer struct {
 
 func (UnimplementedNOSQLServiceServer) Initialize(context.Context, *InitializeRequest) (*InitializeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Initialize not implemented")
+}
+func (UnimplementedNOSQLServiceServer) GetLeader(context.Context, *GetLeaderRequest) (*GetLeaderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLeader not implemented")
 }
 func (UnimplementedNOSQLServiceServer) CreateProduct(context.Context, *CreateProductRequest) (*CreateProductResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProduct not implemented")
@@ -170,6 +184,24 @@ func _NOSQLService_Initialize_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(NOSQLServiceServer).Initialize(ctx, req.(*InitializeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NOSQLService_GetLeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLeaderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NOSQLServiceServer).GetLeader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NOSQLService/GetLeader",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NOSQLServiceServer).GetLeader(ctx, req.(*GetLeaderRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -292,6 +324,10 @@ var NOSQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Initialize",
 			Handler:    _NOSQLService_Initialize_Handler,
+		},
+		{
+			MethodName: "GetLeader",
+			Handler:    _NOSQLService_GetLeader_Handler,
 		},
 		{
 			MethodName: "CreateProduct",

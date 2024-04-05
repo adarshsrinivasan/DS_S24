@@ -3,6 +3,7 @@ module github.com/adarshsrinivasan/DS_S24
 go 1.19
 
 require (
+	github.com/fortytw2/leaktest v1.3.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1

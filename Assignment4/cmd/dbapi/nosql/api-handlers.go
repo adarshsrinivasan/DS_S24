@@ -2,100 +2,176 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/adarshsrinivasan/DS_S24/library/common"
-	"github.com/adarshsrinivasan/DS_S24/library/proto"
+	libProto "github.com/adarshsrinivasan/DS_S24/library/proto"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type noSQLServer struct {
-	proto.UnimplementedNOSQLServiceServer
+	libProto.UnimplementedNOSQLServiceServer
 }
 
-func (server *noSQLServer) Initialize(ctx context.Context, request *proto.InitializeRequest) (*proto.InitializeResponse, error) {
-	if err := initialize(ctx, request.ServiceName, request.SQLSchemaName); err != nil {
-		err = fmt.Errorf("exception while initializing.... %v", err)
-		log.Panicf("Initialize: %v\n", err)
+func (server *noSQLServer) GetLeader(ctx context.Context, request *libProto.GetLeaderRequest) (*libProto.GetLeaderResponse, error) {
+	for raftServer.cm.leaderID == "" {
+		log.Warnf("GetLeader(%s): LeaderID Empty. Waiting for leader to be assigned.", nodeName)
+		time.Sleep(100 * time.Millisecond)
 	}
-	response := &proto.InitializeResponse{Err: common.ConvertErrorToProtoError(err)}
-	return response, err
+	leaderPort := 0
+	for i := 0; i < len(peerNodeNames); i++ {
+		if peerNodeNames[i] == raftServer.cm.leaderID {
+			leaderPort, _ = strconv.Atoi(peerNodePorts[i])
+		}
+	}
+	return &libProto.GetLeaderResponse{
+		LeaderNodeName: raftServer.cm.leaderID,
+		LeaderNodePort: int32(leaderPort),
+		Err:            nil,
+	}, nil
 }
 
-func (server *noSQLServer) CreateProduct(ctx context.Context, request *proto.CreateProductRequest) (*proto.CreateProductResponse, error) {
+func (server *noSQLServer) CreateProduct(ctx context.Context, request *libProto.CreateProductRequest) (*libProto.CreateProductResponse, error) {
+	payload, _ := proto.Marshal(request)
+	opsType := CreateProduct
+	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
+	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
+	<-respChan
+	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
+	handler := noSQLServerHandlers{}
+	return handler.CreateProduct(ctx, request)
+}
+
+func (server *noSQLServer) GetProductByID(ctx context.Context, request *libProto.GetProductByIDRequest) (*libProto.GetProductByIDResponse, error) {
+	payload, _ := proto.Marshal(request)
+	opsType := GetProductByID
+	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
+	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
+	<-respChan
+	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
+	handler := noSQLServerHandlers{}
+	return handler.GetProductByID(ctx, request)
+}
+func (server *noSQLServer) ListProductsByKeyWordsAndCategory(ctx context.Context, request *libProto.ListProductsByKeyWordsAndCategoryRequest) (*libProto.ListProductsByKeyWordsAndCategoryResponse, error) {
+	payload, _ := proto.Marshal(request)
+	opsType := ListProductsByKeyWordsAndCategory
+	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
+	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
+	<-respChan
+	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
+	handler := noSQLServerHandlers{}
+	return handler.ListProductsByKeyWordsAndCategory(ctx, request)
+}
+func (server *noSQLServer) ListProductsBySellerID(ctx context.Context, request *libProto.ListProductsBySellerIDRequest) (*libProto.ListProductsBySellerIDResponse, error) {
+	payload, _ := proto.Marshal(request)
+	opsType := ListProductsBySellerID
+	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
+	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
+	<-respChan
+	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
+	handler := noSQLServerHandlers{}
+	return handler.ListProductsBySellerID(ctx, request)
+}
+func (server *noSQLServer) UpdateProductByID(ctx context.Context, request *libProto.UpdateProductByIDRequest) (*libProto.UpdateProductByIDResponse, error) {
+	payload, _ := proto.Marshal(request)
+	opsType := UpdateProductByID
+	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
+	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
+	<-respChan
+	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
+	handler := noSQLServerHandlers{}
+	return handler.UpdateProductByID(ctx, request)
+}
+func (server *noSQLServer) DeleteProductByID(ctx context.Context, request *libProto.DeleteProductByIDRequest) (*libProto.DeleteProductByIDResponse, error) {
+	payload, _ := proto.Marshal(request)
+	opsType := DeleteProductByID
+	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
+	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
+	<-respChan
+	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
+	handler := noSQLServerHandlers{}
+	return handler.DeleteProductByID(ctx, request)
+}
+
+type noSQLServerHandlers struct {
+}
+
+func (server *noSQLServerHandlers) CreateProduct(ctx context.Context, request *libProto.CreateProductRequest) (*libProto.CreateProductResponse, error) {
 	tableModel := convertProtoProductModelToProductTableModel(ctx, request.RequestModel)
 	statusCode, err := tableModel.CreateProduct(ctx)
-	response := &proto.CreateProductResponse{
+	response := &libProto.CreateProductResponse{
 		StatusCode:    int32(statusCode),
 		Err:           common.ConvertErrorToProtoError(err),
 		ResponseModel: convertProductTableModelToProtoProductModel(ctx, tableModel),
 	}
 	return response, err
 }
-func (server *noSQLServer) GetProductByID(ctx context.Context, request *proto.GetProductByIDRequest) (*proto.GetProductByIDResponse, error) {
+func (server *noSQLServerHandlers) GetProductByID(ctx context.Context, request *libProto.GetProductByIDRequest) (*libProto.GetProductByIDResponse, error) {
 	tableModel := convertProtoProductModelToProductTableModel(ctx, request.RequestModel)
 	statusCode, err := tableModel.GetProductByID(ctx)
-	response := &proto.GetProductByIDResponse{
+	response := &libProto.GetProductByIDResponse{
 		StatusCode:    int32(statusCode),
 		Err:           common.ConvertErrorToProtoError(err),
 		ResponseModel: convertProductTableModelToProtoProductModel(ctx, tableModel),
 	}
 	return response, err
 }
-func (server *noSQLServer) ListProductsByKeyWordsAndCategory(ctx context.Context, request *proto.ListProductsByKeyWordsAndCategoryRequest) (*proto.ListProductsByKeyWordsAndCategoryResponse, error) {
+func (server *noSQLServerHandlers) ListProductsByKeyWordsAndCategory(ctx context.Context, request *libProto.ListProductsByKeyWordsAndCategoryRequest) (*libProto.ListProductsByKeyWordsAndCategoryResponse, error) {
 	tableModel := convertProtoProductModelToProductTableModel(ctx, request.RequestModel)
 	listResponse, statusCode, err := tableModel.ListProductsByKeyWordsAndCategory(ctx)
-	var listProtoResponse []*proto.ProductModel
+	var listProtoResponse []*libProto.ProductModel
 	if err == nil {
 		for _, resp := range listResponse {
 			listProtoResponse = append(listProtoResponse, convertProductTableModelToProtoProductModel(ctx, &resp))
 		}
 	}
-	response := &proto.ListProductsByKeyWordsAndCategoryResponse{
+	response := &libProto.ListProductsByKeyWordsAndCategoryResponse{
 		StatusCode:    int32(statusCode),
 		Err:           common.ConvertErrorToProtoError(err),
 		ResponseModel: listProtoResponse,
 	}
 	return response, err
 }
-func (server *noSQLServer) ListProductsBySellerID(ctx context.Context, request *proto.ListProductsBySellerIDRequest) (*proto.ListProductsBySellerIDResponse, error) {
+func (server *noSQLServerHandlers) ListProductsBySellerID(ctx context.Context, request *libProto.ListProductsBySellerIDRequest) (*libProto.ListProductsBySellerIDResponse, error) {
 	tableModel := convertProtoProductModelToProductTableModel(ctx, request.RequestModel)
 	listResponse, statusCode, err := tableModel.ListProductsBySellerID(ctx)
-	var listProtoResponse []*proto.ProductModel
+	var listProtoResponse []*libProto.ProductModel
 	if err == nil {
 		for _, resp := range listResponse {
 			listProtoResponse = append(listProtoResponse, convertProductTableModelToProtoProductModel(ctx, &resp))
 		}
 	}
-	response := &proto.ListProductsBySellerIDResponse{
+	response := &libProto.ListProductsBySellerIDResponse{
 		StatusCode:    int32(statusCode),
 		Err:           common.ConvertErrorToProtoError(err),
 		ResponseModel: listProtoResponse,
 	}
 	return response, err
 }
-func (server *noSQLServer) UpdateProductByID(ctx context.Context, request *proto.UpdateProductByIDRequest) (*proto.UpdateProductByIDResponse, error) {
+func (server *noSQLServerHandlers) UpdateProductByID(ctx context.Context, request *libProto.UpdateProductByIDRequest) (*libProto.UpdateProductByIDResponse, error) {
 	tableModel := convertProtoProductModelToProductTableModel(ctx, request.RequestModel)
 	statusCode, err := tableModel.UpdateProductByID(ctx)
-	response := &proto.UpdateProductByIDResponse{
+	response := &libProto.UpdateProductByIDResponse{
 		StatusCode:    int32(statusCode),
 		Err:           common.ConvertErrorToProtoError(err),
 		ResponseModel: convertProductTableModelToProtoProductModel(ctx, tableModel),
 	}
 	return response, err
 }
-func (server *noSQLServer) DeleteProductByID(ctx context.Context, request *proto.DeleteProductByIDRequest) (*proto.DeleteProductByIDResponse, error) {
+func (server *noSQLServerHandlers) DeleteProductByID(ctx context.Context, request *libProto.DeleteProductByIDRequest) (*libProto.DeleteProductByIDResponse, error) {
 	tableModel := convertProtoProductModelToProductTableModel(ctx, request.RequestModel)
 	statusCode, err := tableModel.DeleteProductByID(ctx)
-	response := &proto.DeleteProductByIDResponse{
+	response := &libProto.DeleteProductByIDResponse{
 		StatusCode: int32(statusCode),
 		Err:        common.ConvertErrorToProtoError(err),
 	}
 	return response, err
 }
 
-func convertProtoProductModelToProductTableModel(ctx context.Context, protoProductModel *proto.ProductModel) *ProductTableModel {
+func convertProtoProductModelToProductTableModel(ctx context.Context, protoProductModel *libProto.ProductModel) *ProductTableModel {
 	return &ProductTableModel{
 		ID:                 protoProductModel.ID,
 		Name:               protoProductModel.Name,
@@ -112,13 +188,13 @@ func convertProtoProductModelToProductTableModel(ctx context.Context, protoProdu
 	}
 }
 
-func convertProductTableModelToProtoProductModel(ctx context.Context, productTableModel *ProductTableModel) *proto.ProductModel {
-	return &proto.ProductModel{
+func convertProductTableModelToProtoProductModel(ctx context.Context, productTableModel *ProductTableModel) *libProto.ProductModel {
+	return &libProto.ProductModel{
 		ID:                 productTableModel.ID,
 		Name:               productTableModel.Name,
-		Category:           proto.CATEGORY(productTableModel.Category),
+		Category:           libProto.CATEGORY(productTableModel.Category),
 		Keywords:           productTableModel.Keywords,
-		Condition:          proto.CONDITION(productTableModel.Condition),
+		Condition:          libProto.CONDITION(productTableModel.Condition),
 		SalePrice:          productTableModel.SalePrice,
 		SellerID:           productTableModel.SellerID,
 		Quantity:           int32(productTableModel.Quantity),

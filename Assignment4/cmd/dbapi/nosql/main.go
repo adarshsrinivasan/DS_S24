@@ -14,11 +14,13 @@ import (
 )
 
 const (
-	ServerHostEnv      = "SERVER_HOST"
-	ServerPortEnv      = "SERVER_PORT"
-	NOSQLSchemaNameEnv = "MONGO_DB"
-
-	ServiceName = "server"
+	ServerHostEnv                 = "SERVER_HOST"
+	ServerPortEnv                 = "SERVER_PORT"
+	NOSQLSchemaNameEnv            = "MONGO_DB"
+	ServiceName                   = "server"
+	ProductDBNodeNameBase         = "product-db"
+	Connect_retry_count           = 5
+	Connect_retry_cooloff_seconds = 5
 )
 
 var (
@@ -27,8 +29,12 @@ var (
 	serverHost      = common.GetEnv(ServerHostEnv, "localhost")
 	serverPort, _   = strconv.Atoi(common.GetEnv(ServerPortEnv, "50001"))
 	nosqlSchemaName = common.GetEnv(NOSQLSchemaNameEnv, "marketplace")
-	nodeName        = common.GetEnv(common.NodeNameEnv, "nosql-server")
-	peerNodeNames   = common.SplitCSV(common.GetEnv(common.PeerNodeNamesEnv, "nosql-server1,nosql-server2,nosql-server3,nosql-server4,nosql-server5"))
+	syncHost        = common.GetEnv(common.SyncHostEnv, "localhost")
+	syncPort, _     = strconv.Atoi(common.GetEnv(common.SyncPortEnv, "60003"))
+	nodeName        = common.GetEnv(common.NodeNameEnv, fmt.Sprintf("%s1", ProductDBNodeNameBase))
+	peerNodeNames   = common.SplitCSV(common.GetEnv(common.PeerNodeNamesEnv, fmt.Sprintf("%s1,%s2,%s3,%s4,%s5", ProductDBNodeNameBase, ProductDBNodeNameBase, ProductDBNodeNameBase, ProductDBNodeNameBase, ProductDBNodeNameBase)))
+	peerNodePorts   = common.SplitCSV(common.GetEnv(common.PeerNodePortsEnv, fmt.Sprintf("%d,%d,%d,%d,%d", syncPort, syncPort, syncPort, syncPort, syncPort)))
+	raftServer      *Server
 )
 
 func initializeNOSQLDB(ctx context.Context, serviceName, schemaName string) error {
@@ -106,6 +112,8 @@ func main() {
 		err = fmt.Errorf("exception while initializing DB.... %v", err)
 		log.Panicf("main: %v\n", err)
 	}
+
+	initRaftServer(ctx, nodeName, peerNodeNames, peerNodePorts)
 
 	log.Println("Server Listening ...")
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", serverHost, serverPort))
