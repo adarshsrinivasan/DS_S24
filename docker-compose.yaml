@@ -466,8 +466,6 @@ services:
     networks:
       - marketplace-network
 
-  client
-
 
 # Add volumes definition
 volumes:
