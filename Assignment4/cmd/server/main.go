@@ -25,6 +25,10 @@ var (
 	ctx                        context.Context
 	httpServerHost             = common.GetEnv(ServerHostEnv, "localhost")
 	httpServerPort, _          = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
+	nosqlNodeNames             = common.SplitCSV(common.GetEnv(common.NOSQLNodeNamesEnv, "localhost"))
+	nosqlNodePorts             = common.SplitCSV(common.GetEnv(common.NOSQLNodePortsEnv, "50003"))
+	sqlNodeNames               = common.SplitCSV(common.GetEnv(common.SQLNodeNamesEnv, "localhost"))
+	sqlNodePorts               = common.SplitCSV(common.GetEnv(common.SQLNodePortsEnv, "50002"))
 	sqlRPCHost, sqlRPCPort     = getSQLHostNameAndPort()
 	nosqlRPCHost, nosqlRPCPort = getNOSQLHostNameAndPort()
 	transactionSoapHost        = common.GetEnv(TransactionHostEnv, "localhost")
@@ -34,16 +38,12 @@ var (
 )
 
 func getSQLHostNameAndPort() (string, int) {
-	sqlNodeNames := common.SplitCSV(common.GetEnv(common.SQLNodeNamesEnv, "localhost"))
-	sqlNodePorts := common.SplitCSV(common.GetEnv(common.SQLNodePortsEnv, "50002"))
 	sqlNodeName, sqlNodePort := common.GetRandomHostAndPort(sqlNodeNames, sqlNodePorts)
 	logrus.Infof("getSQLHostName: HostName: %s, Port: %d\n", sqlNodeName, sqlNodePort)
 	return sqlNodeName, sqlNodePort
 }
 
 func getNOSQLHostNameAndPort() (string, int) {
-	nosqlNodeNames := common.SplitCSV(common.GetEnv(common.NOSQLNodeNamesEnv, "localhost"))
-	nosqlNodePorts := common.SplitCSV(common.GetEnv(common.NOSQLNodePortsEnv, "50003"))
 	nosqlNodeName, nosqlNodePort := common.GetRandomHostAndPort(nosqlNodeNames, nosqlNodePorts)
 	logrus.Infof("getNOSQLHostNameAndPort: HostName: %s, Port: %d\n", nosqlNodeName, nosqlNodePort)
 	return nosqlNodeName, nosqlNodePort

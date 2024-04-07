@@ -22,33 +22,27 @@ import (
 )
 
 var (
-	responseTrackers = make(map[string]chan interface{})
+	responseTrackers = make(map[string]chan bool)
 )
 
 type opsType int
 
 const (
 	CreateProduct opsType = iota
-	GetProductByID
-	ListProductsByKeyWordsAndCategory
-	ListProductsBySellerID
 	UpdateProductByID
 	DeleteProductByID
 )
 
 var opsTypeToStr = map[opsType]string{
-	CreateProduct:                     "CreateProduct",
-	GetProductByID:                    "GetProductByID",
-	ListProductsByKeyWordsAndCategory: "ListProductsByKeyWordsAndCategory",
-	ListProductsBySellerID:            "ListProductsBySellerID",
-	UpdateProductByID:                 "UpdateProductByID",
-	DeleteProductByID:                 "DeleteProductByID",
+	CreateProduct:     "CreateProduct",
+	UpdateProductByID: "UpdateProductByID",
+	DeleteProductByID: "DeleteProductByID",
 }
 
 const DebugCM = 1
 
 // CommitEntry is the data reported by Raft to the commit channel. Each commit
-// entry notifies the client that consensus was reached on a command and it can
+// entry notifies the client that consensus was reached on a command, and it can
 // be applied to the client's state machine.
 type CommitEntry struct {
 	// ID is used to uniquely identify a request
@@ -149,7 +143,7 @@ type ConsensusModule struct {
 }
 
 // NewConsensusModule creates a new CM with the given ID, list of peer IDs and
-// server. The ready channel signals the CM that all peers are connected and
+// server. The ready channel signals the CM that all peers are connected, and
 // it's safe to start its state machine. commitChan is going to be used by the
 // CM to send log entries that have been committed by the Raft cluster.
 func NewConsensusModule(id string, peerIds []string, server *Server, storage Storage, ready <-chan interface{}, commitChan chan<- CommitEntry) *ConsensusModule {
@@ -279,12 +273,12 @@ func (cm *ConsensusModule) persistToStorage() {
 // dlog logs a debugging message is DebugCM > 0.
 func (cm *ConsensusModule) dlog(format string, args ...interface{}) {
 	if DebugCM > 0 {
-		format = fmt.Sprintf("[%d] ", cm.id) + format
+		format = fmt.Sprintf("[%s] ", cm.id) + format
 		log.Printf(format, args...)
 	}
 }
 
-// See figure 2 in the paper.
+// RequestVoteArgs See figure 2 in the paper.
 type RequestVoteArgs struct {
 	Term         int
 	CandidateId  string
@@ -305,7 +299,7 @@ func (cm *ConsensusModule) RequestVote(args RequestVoteArgs, reply *RequestVoteR
 		return nil
 	}
 	lastLogIndex, lastLogTerm := cm.lastLogIndexAndTerm()
-	cm.dlog("RequestVote: %+v [currentTerm=%d, votedFor=%d, log index/term=(%d, %d)]", args, cm.currentTerm, cm.votedFor, lastLogIndex, lastLogTerm)
+	cm.dlog("RequestVote: %+v [currentTerm=%d, votedFor=%s, log index/term=(%d, %d)]", args, cm.currentTerm, cm.votedFor, lastLogIndex, lastLogTerm)
 
 	if args.Term > cm.currentTerm {
 		cm.dlog("... term out of date in RequestVote")
@@ -328,7 +322,7 @@ func (cm *ConsensusModule) RequestVote(args RequestVoteArgs, reply *RequestVoteR
 	return nil
 }
 
-// See figure 2 in the paper.
+// AppendEntriesArgs See figure 2 in the paper.
 type AppendEntriesArgs struct {
 	Term     int
 	LeaderId string
@@ -355,7 +349,7 @@ func (cm *ConsensusModule) AppendEntries(args AppendEntriesArgs, reply *AppendEn
 	if cm.state == Dead {
 		return nil
 	}
-	cm.dlog("AppendEntries: %+v", args)
+	//cm.dlog("AppendEntries: %+v", args)
 
 	if args.Term > cm.currentTerm {
 		cm.dlog("... term out of date in AppendEntries")
@@ -435,7 +429,7 @@ func (cm *ConsensusModule) AppendEntries(args AppendEntriesArgs, reply *AppendEn
 
 	reply.Term = cm.currentTerm
 	cm.persistToStorage()
-	cm.dlog("AppendEntries reply: %+v", *reply)
+	//cm.dlog("AppendEntries reply: %+v", *reply)
 	return nil
 }
 
@@ -525,7 +519,7 @@ func (cm *ConsensusModule) startElection() {
 				LastLogTerm:  savedLastLogTerm,
 			}
 
-			cm.dlog("sending RequestVote to %d: %+v", peerId, args)
+			cm.dlog("sending RequestVote to %s: %+v", peerId, args)
 			var reply RequestVoteReply
 			if err := cm.server.Call(peerId, "ConsensusModule.RequestVote", args, &reply); err == nil {
 				cm.mu.Lock()
@@ -618,7 +612,7 @@ func (cm *ConsensusModule) startLeader() {
 			}
 
 			if doSend {
-				// If this isn't a leader any more, stop the heartbeat loop.
+				// If this isn't a leader anymore, stop the heartbeat loop.
 				cm.mu.Lock()
 				if cm.state != Leader {
 					cm.mu.Unlock()
@@ -662,7 +656,7 @@ func (cm *ConsensusModule) leaderSendAEs() {
 				LeaderCommit: cm.commitIndex,
 			}
 			cm.mu.Unlock()
-			cm.dlog("sending AppendEntries to %v: ni=%d, args=%+v", peerId, ni, args)
+			//cm.dlog("sending AppendEntries to %v: ni=%d, args=%+v", peerId, ni, args)
 			var reply AppendEntriesReply
 			if err := cm.server.Call(peerId, "ConsensusModule.AppendEntries", args, &reply); err == nil {
 				cm.mu.Lock()
@@ -692,7 +686,7 @@ func (cm *ConsensusModule) leaderSendAEs() {
 								}
 							}
 						}
-						cm.dlog("AppendEntries reply from %d success: nextIndex := %v, matchIndex := %v; commitIndex := %d", peerId, cm.nextIndex, cm.matchIndex, cm.commitIndex)
+						//cm.dlog("AppendEntries reply from %s success: nextIndex := %v, matchIndex := %v; commitIndex := %d", peerId, cm.nextIndex, cm.matchIndex, cm.commitIndex)
 						if cm.commitIndex != savedCommitIndex {
 							cm.dlog("leader sets commitIndex := %d", cm.commitIndex)
 							// Commit index changed: the leader considers new entries to be
@@ -718,7 +712,7 @@ func (cm *ConsensusModule) leaderSendAEs() {
 						} else {
 							cm.nextIndex[peerId] = reply.ConflictIndex
 						}
-						cm.dlog("AppendEntries reply from %d !success: nextIndex := %d", peerId, ni-1)
+						cm.dlog("AppendEntries reply from %s !success: nextIndex := %d", peerId, ni-1)
 					}
 				}
 			}
@@ -771,11 +765,11 @@ func (cm *ConsensusModule) commitChanSender() {
 	cm.dlog("commitChanSender done")
 }
 
-func sendRequestToPeers(ctx context.Context, opsType opsType, payload []byte) (string, <-chan interface{}) {
+func sendRequestToPeers(ctx context.Context, opsType opsType, payload []byte) (string, <-chan bool) {
 	requestID := common.GenerateUUID()
-	responseChan := make(chan interface{})
+	responseChan := make(chan bool)
 	responseTrackers[requestID] = responseChan
-	raftServer.cm.Submit(nodeName, opsType, payload)
+	raftServer.cm.Submit(requestID, opsType, payload)
 	return requestID, responseChan
 }
 
@@ -784,10 +778,12 @@ func handleCommit(ctx context.Context, commitChan <-chan CommitEntry) {
 		log.Infof("handleCommit(%s) got %+v", nodeName, commitEntry)
 		var noSQLRPCServer noSQLServerHandlers
 		if responseTracker, ok := responseTrackers[commitEntry.ID]; ok {
-			close(responseTracker)
+			log.Infof("handleCommit(%s) found a tracker", nodeName)
+			responseTracker <- true
 			delete(responseTrackers, commitEntry.ID)
 			continue
 		}
+		log.Infof("handleCommit(%s) did not find a tracker", nodeName)
 		switch commitEntry.Command {
 		case CreateProduct:
 			msg := &libProto.CreateProductRequest{}
@@ -797,42 +793,6 @@ func handleCommit(ctx context.Context, commitChan <-chan CommitEntry) {
 				continue
 			}
 			if _, err := noSQLRPCServer.CreateProduct(ctx, msg); err != nil {
-				err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[commitEntry.Command], err)
-				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
-				continue
-			}
-		case GetProductByID:
-			msg := &libProto.GetProductByIDRequest{}
-			if err := proto.Unmarshal(commitEntry.Payload, msg); err != nil {
-				err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[commitEntry.Command], err)
-				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
-				continue
-			}
-			if _, err := noSQLRPCServer.GetProductByID(ctx, msg); err != nil {
-				err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[commitEntry.Command], err)
-				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
-				continue
-			}
-		case ListProductsByKeyWordsAndCategory:
-			msg := &libProto.ListProductsByKeyWordsAndCategoryRequest{}
-			if err := proto.Unmarshal(commitEntry.Payload, msg); err != nil {
-				err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[commitEntry.Command], err)
-				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
-				continue
-			}
-			if _, err := noSQLRPCServer.ListProductsByKeyWordsAndCategory(ctx, msg); err != nil {
-				err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[commitEntry.Command], err)
-				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
-				continue
-			}
-		case ListProductsBySellerID:
-			msg := &libProto.ListProductsBySellerIDRequest{}
-			if err := proto.Unmarshal(commitEntry.Payload, msg); err != nil {
-				err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[commitEntry.Command], err)
-				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
-				continue
-			}
-			if _, err := noSQLRPCServer.ListProductsBySellerID(ctx, msg); err != nil {
 				err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[commitEntry.Command], err)
 				log.Infof("handleCommit(%s): exception committing %s request. %v", nodeName, commitEntry.ID, err)
 				continue
@@ -897,7 +857,7 @@ func initRaftServer(ctx context.Context, id string, peerNodeNames, peerNodePorts
 			log.Infof("initRaftServer(%s): connected successfully to all peers!", id)
 			break
 		}
-		log.Warnf("initRaftServer(%s): not connedted to all peers. Retry no. %d out of %d", id, (j + 1), Connect_retry_count)
+		log.Warnf("initRaftServer(%s): not connedted to all peers. Retry no. %d out of %d", id, j+1, Connect_retry_count)
 		time.Sleep(Connect_retry_cooloff_seconds * time.Second)
 	}
 	close(ready)

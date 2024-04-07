@@ -25,22 +25,10 @@ func (server *sqlServer) CreateBuyer(ctx context.Context, request *libProto.Crea
 	return handler.CreateBuyer(ctx, request)
 }
 func (server *sqlServer) GetBuyerByID(ctx context.Context, request *libProto.GetBuyerByIDRequest) (*libProto.GetBuyerByIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetBuyerByID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetBuyerByID(ctx, request)
 }
 func (server *sqlServer) GetBuyerByUserName(ctx context.Context, request *libProto.GetBuyerByUserNameRequest) (*libProto.GetBuyerByUserNameResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetBuyerByUserName
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetBuyerByUserName(ctx, request)
 }
@@ -65,22 +53,10 @@ func (server *sqlServer) CreateCart(ctx context.Context, request *libProto.Creat
 	return handler.CreateCart(ctx, request)
 }
 func (server *sqlServer) GetCartByID(ctx context.Context, request *libProto.GetCartByIDRequest) (*libProto.GetCartByIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetCartByID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetCartByID(ctx, request)
 }
 func (server *sqlServer) GetCartByBuyerID(ctx context.Context, request *libProto.GetCartByBuyerIDRequest) (*libProto.GetCartByBuyerIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetCartByBuyerID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetCartByBuyerID(ctx, request)
 }
@@ -115,32 +91,14 @@ func (server *sqlServer) CreateCartItem(ctx context.Context, request *libProto.C
 	return handler.CreateCartItem(ctx, request)
 }
 func (server *sqlServer) GetCartItemByID(ctx context.Context, request *libProto.GetCartItemByIDRequest) (*libProto.GetCartItemByIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetCartItemByID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetCartItemByID(ctx, request)
 }
 func (server *sqlServer) GetCartItemByCartIDAndProductID(ctx context.Context, request *libProto.GetCartItemByCartIDAndProductIDRequest) (*libProto.GetCartItemByCartIDAndProductIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetCartItemByCartIDAndProductID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetCartItemByCartIDAndProductID(ctx, request)
 }
 func (server *sqlServer) ListCartItemByCartID(ctx context.Context, request *libProto.ListCartItemByCartIDRequest) (*libProto.ListCartItemByCartIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := ListCartItemByCartID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.ListCartItemByCartID(ctx, request)
 }
@@ -195,22 +153,10 @@ func (server *sqlServer) CreateSeller(ctx context.Context, request *libProto.Cre
 	return handler.CreateSeller(ctx, request)
 }
 func (server *sqlServer) GetSellerByID(ctx context.Context, request *libProto.GetSellerByIDRequest) (*libProto.GetSellerByIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetSellerByID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetSellerByID(ctx, request)
 }
 func (server *sqlServer) GetSellerByUserName(ctx context.Context, request *libProto.GetSellerByUserNameRequest) (*libProto.GetSellerByUserNameResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetSellerByUserName
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetSellerByUserName(ctx, request)
 }
@@ -235,22 +181,10 @@ func (server *sqlServer) CreateSession(ctx context.Context, request *libProto.Cr
 	return handler.CreateSession(ctx, request)
 }
 func (server *sqlServer) GetSessionByID(ctx context.Context, request *libProto.GetSessionByIDRequest) (*libProto.GetSessionByIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetSessionByID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetSessionByID(ctx, request)
 }
 func (server *sqlServer) GetSessionByUserID(ctx context.Context, request *libProto.GetSessionByUserIDRequest) (*libProto.GetSessionByUserIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetSessionByUserID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.GetSessionByUserID(ctx, request)
 }
@@ -275,32 +209,14 @@ func (server *sqlServer) CreateTransaction(ctx context.Context, request *libProt
 	return handler.CreateTransaction(ctx, request)
 }
 func (server *sqlServer) ListTransactionsBySellerID(ctx context.Context, request *libProto.ListTransactionsBySellerIDRequest) (*libProto.ListTransactionsBySellerIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := ListTransactionsBySellerID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.ListTransactionsBySellerID(ctx, request)
 }
 func (server *sqlServer) ListTransactionsByBuyerID(ctx context.Context, request *libProto.ListTransactionsByBuyerIDRequest) (*libProto.ListTransactionsByBuyerIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := ListTransactionsByBuyerID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.ListTransactionsByBuyerID(ctx, request)
 }
 func (server *sqlServer) ListTransactionsByCartID(ctx context.Context, request *libProto.ListTransactionsByCartIDRequest) (*libProto.ListTransactionsByCartIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := ListTransactionsByCartID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := sqlServerHandlers{}
 	return handler.ListTransactionsByCartID(ctx, request)
 }

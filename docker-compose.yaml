@@ -7,6 +7,63 @@ services:
     build:
       dockerfile: ./Dockerfile-customer-db
     restart: always
+#    ports:
+#      - "50002:50002"
+#      - "60002:60002"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_MAX_CONN: 500
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50002
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60002
+      NODE_NAME: customer-db1
+      PEER_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      PEER_NODE_PORTS: 60002,60002,60002,60002,60002
+    networks:
+      - marketplace-network
+    volumes:
+      - postgresql-data1:/var/lib/postgresql/data
+    # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
+
+  customer-db2:
+    image: adarshzededa/customer-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-customer-db
+    restart: always
+#    ports:
+#      - "50002:50002"
+#      - "60002:60002"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_MAX_CONN: 500
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50002
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60002
+      NODE_NAME: customer-db2
+      PEER_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      PEER_NODE_PORTS: 60002,60002,60002,60002,60002
+    networks:
+      - marketplace-network
+    volumes:
+      - postgresql-data2:/var/lib/postgresql/data
+
+  customer-db3:
+    image: adarshzededa/customer-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-customer-db
+    restart: always
     #    ports:
     #      - "50002:50002"
     #      - "60002:60002"
@@ -21,14 +78,69 @@ services:
       SERVER_PORT: 50002
       SYNC_HOST: 0.0.0.0
       SYNC_PORT: 60002
-      NODE_NAME: customer-db1
-      PEER_NODE_NAMES: customer-db1
-      PEER_NODE_PORTS: 60002
+      NODE_NAME: customer-db3
+      PEER_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      PEER_NODE_PORTS: 60002,60002,60002,60002,60002
     networks:
       - marketplace-network
     volumes:
-      - postgresql-data:/var/lib/postgresql/data
-    # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
+      - postgresql-data3:/var/lib/postgresql/data
+
+  customer-db4:
+    image: adarshzededa/customer-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-customer-db
+    restart: always
+    #    ports:
+    #      - "50002:50002"
+    #      - "60002:60002"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_MAX_CONN: 500
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50002
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60002
+      NODE_NAME: customer-db4
+      PEER_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      PEER_NODE_PORTS: 60002,60002,60002,60002,60002
+    networks:
+      - marketplace-network
+    volumes:
+      - postgresql-data4:/var/lib/postgresql/data
+
+  customer-db5:
+    image: adarshzededa/customer-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-customer-db
+    restart: always
+    #    ports:
+    #      - "50002:50002"
+    #      - "60002:60002"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: marketplace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_MAX_CONN: 500
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50002
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60002
+      NODE_NAME: customer-db5
+      PEER_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      PEER_NODE_PORTS: 60002,60002,60002,60002,60002
+    networks:
+      - marketplace-network
+    volumes:
+      - postgresql-data5:/var/lib/postgresql/data
 
   product-db1:
     image: adarshzededa/product-db:latest
@@ -36,8 +148,8 @@ services:
     build:
       dockerfile: ./Dockerfile-product-db
     restart: always
-    ports:
-      - "50003:50003"
+#    ports:
+#      - "50003:50003"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
@@ -48,12 +160,127 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50003
       MONGO_DB: marketplace
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60003
       NODE_NAME: product-db1
-      PEER_NODE_NAMES: product-db1
+      PEER_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      PEER_NODE_PORTS: 60003,60003,60003,60003,60003
     networks:
       - marketplace-network
     volumes:
-      - mongodb_data:/data/db
+      - mongodb_data1:/data/db
+
+  product-db2:
+    image: adarshzededa/product-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-product-db
+    restart: always
+#    ports:
+#      - "50003:50003"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_HOST: localhost
+      MONGO_PORT: 27017
+      MONGO_USER: admin
+      MONGO_PASSWORD: admin
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50003
+      MONGO_DB: marketplace
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60003
+      NODE_NAME: product-db2
+      PEER_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      PEER_NODE_PORTS: 60003,60003,60003,60003,60003
+    networks:
+      - marketplace-network
+    volumes:
+      - mongodb_data2:/data/db
+
+  product-db3:
+    image: adarshzededa/product-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-product-db
+    restart: always
+#    ports:
+#      - "50003:50003"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_HOST: localhost
+      MONGO_PORT: 27017
+      MONGO_USER: admin
+      MONGO_PASSWORD: admin
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50003
+      MONGO_DB: marketplace
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60003
+      NODE_NAME: product-db3
+      PEER_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      PEER_NODE_PORTS: 60003,60003,60003,60003,60003
+    networks:
+      - marketplace-network
+    volumes:
+      - mongodb_data3:/data/db
+
+  product-db4:
+    image: adarshzededa/product-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-product-db
+    restart: always
+    #    ports:
+    #      - "50003:50003"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_HOST: localhost
+      MONGO_PORT: 27017
+      MONGO_USER: admin
+      MONGO_PASSWORD: admin
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50003
+      MONGO_DB: marketplace
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60003
+      NODE_NAME: product-db4
+      PEER_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      PEER_NODE_PORTS: 60003,60003,60003,60003,60003
+    networks:
+      - marketplace-network
+    volumes:
+      - mongodb_data4:/data/db
+
+  product-db5:
+    image: adarshzededa/product-db:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-product-db
+    restart: always
+    #    ports:
+    #      - "50003:50003"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_HOST: localhost
+      MONGO_PORT: 27017
+      MONGO_USER: admin
+      MONGO_PASSWORD: admin
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50003
+      MONGO_DB: marketplace
+      SYNC_HOST: 0.0.0.0
+      SYNC_PORT: 60003
+      NODE_NAME: product-db5
+      PEER_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      PEER_NODE_PORTS: 60003,60003,60003,60003,60003
+    networks:
+      - marketplace-network
+    volumes:
+      - mongodb_data5:/data/db
 
   transaction-service:
     image: adarshzededa/transaction-service:latest
@@ -76,10 +303,6 @@ services:
     build:
       dockerfile: ./Dockerfile-server
     restart: always
-    depends_on:
-      - product-db1
-      - customer-db1
-      - transaction-service
     ports:
       - "50000:50000"
     environment:
@@ -88,10 +311,73 @@ services:
       TRANSACTION_HOST: transaction-service
       TRANSACTION_PORT: 50004
       NODE_NAME: server-seller1
-      NOSQL_NODE_NAMES: product-db1
-      NOSQL_NODE_PORTS: 50003
-      SQL_NODE_NAMES: customer-db1
-      SQL_NODE_PORTS: 50002
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
+    networks:
+      - marketplace-network
+
+  server-seller2:
+    image: adarshzededa/server-seller:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50000:50000"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50000
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-seller2
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
+    networks:
+      - marketplace-network
+
+  server-seller3:
+    image: adarshzededa/server-seller:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50000:50000"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50000
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-seller3
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
+    networks:
+      - marketplace-network
+
+  server-seller4:
+    image: adarshzededa/server-seller:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50000:50000"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50000
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-seller4
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
     networks:
       - marketplace-network
 
@@ -110,19 +396,100 @@ services:
       TRANSACTION_HOST: transaction-service
       TRANSACTION_PORT: 50004
       NODE_NAME: server-buyer1
-      NOSQL_NODE_NAMES: product-db1
-      NOSQL_NODE_PORTS: 50003
-      SQL_NODE_NAMES: customer-db1
-      SQL_NODE_PORTS: 50002
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
     networks:
       - marketplace-network
+
+  server-buyer2:
+    image: adarshzededa/server-buyer:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50001:50001"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50001
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-buyer2
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
+    networks:
+      - marketplace-network
+
+  server-buyer3:
+    image: adarshzededa/server-buyer:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50001:50001"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50001
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-buyer3
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
+    networks:
+      - marketplace-network
+
+  server-buyer4:
+    image: adarshzededa/server-buyer:latest
+    platform: "linux/amd64"
+    build:
+      dockerfile: ./Dockerfile-server
+    restart: always
+    ports:
+      - "50001:50001"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50001
+      TRANSACTION_HOST: transaction-service
+      TRANSACTION_PORT: 50004
+      NODE_NAME: server-buyer4
+      NOSQL_NODE_NAMES: product-db1,product-db2,product-db3,product-db4,product-db5
+      NOSQL_NODE_PORTS: 50003,50003,50003,50003,50003
+      SQL_NODE_NAMES: customer-db1,customer-db2,customer-db3,customer-db4,customer-db5
+      SQL_NODE_PORTS: 50002,50002,50002,50002,50002
+    networks:
+      - marketplace-network
+
+  client
 
 
 # Add volumes definition
 volumes:
-  postgresql-data:
+  postgresql-data1:
     driver: local
-  mongodb_data:
+  postgresql-data2:
+    driver: local
+  postgresql-data3:
+    driver: local
+  postgresql-data4:
+    driver: local
+  postgresql-data5:
+    driver: local
+  mongodb_data1:
+    driver: local
+  mongodb_data2:
+    driver: local
+  mongodb_data3:
+    driver: local
+  mongodb_data4:
+    driver: local
+  mongodb_data5:
     driver: local
 
 networks:

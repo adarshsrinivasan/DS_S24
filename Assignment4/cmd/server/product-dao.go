@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -89,6 +90,28 @@ func (product *ProductModel) CreateProduct(ctx context.Context) (int, error) {
 	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
 	if err != nil {
 		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
+		logrus.Errorf("GetProductByID: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	leaderInfo, err := nosqlDBClient.GetLeader(ctx, &proto.GetLeaderRequest{})
+	if err != nil {
+		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "GetLeader", ProductTableName, err)
+		logrus.Errorf("CreateProduct: %v\n", err)
+		return http.StatusInternalServerError, err
+	}
+	conn.Close()
+	logrus.Errorf("CreateProduct: Leader info: %+v", leaderInfo)
+	leaderPort := 0
+	for i := 0; i < len(nosqlNodeNames); i++ {
+		if nosqlNodeNames[i] == leaderInfo.GetLeaderNodeName() {
+			leaderPort, _ = strconv.Atoi(nosqlNodePorts[i])
+			break
+		}
+	}
+
+	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), leaderPort)
+	if err != nil {
+		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("CreateProduct: %v\n", err)
 		return http.StatusInternalServerError, err
 	}
@@ -109,21 +132,8 @@ func (product *ProductModel) GetProductByID(ctx context.Context) (int, error) {
 	request := &proto.GetProductByIDRequest{
 		RequestModel: protoModel,
 	}
-	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
-	if err != nil {
-		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
-		logrus.Errorf("GetProductByID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-	leaderInfo, err := nosqlDBClient.GetLeader(ctx, &proto.GetLeaderRequest{})
-	if err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "GetLeader", ProductTableName, err)
-		logrus.Errorf("GetProductByID: %v\n", err)
-		return http.StatusInternalServerError, err
-	}
-	conn.Close()
 
-	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), int(leaderInfo.GetLeaderNodePort()))
+	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
 	if err != nil {
 		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("GetProductByID: %v\n", err)
@@ -152,19 +162,6 @@ func (product *ProductModel) ListProductsByKeyWordsAndCategory(ctx context.Conte
 		logrus.Errorf("ListProductsByKeyWordsAndCategory: %v\n", err)
 		return nil, http.StatusInternalServerError, err
 	}
-	leaderInfo, err := nosqlDBClient.GetLeader(ctx, &proto.GetLeaderRequest{})
-	if err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "GetLeader", ProductTableName, err)
-		logrus.Errorf("ListProductsByKeyWordsAndCategory: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
-	conn.Close()
-	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), int(leaderInfo.GetLeaderNodePort()))
-	if err != nil {
-		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
-		logrus.Errorf("ListProductsByKeyWordsAndCategory: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
 	defer conn.Close()
 
 	response, err := nosqlDBClient.ListProductsByKeyWordsAndCategory(ctx, request)
@@ -186,19 +183,6 @@ func (product *ProductModel) ListProductsBySellerID(ctx context.Context) ([]Prod
 		RequestModel: protoModel,
 	}
 	nosqlDBClient, conn, err := common.NewNOSQLRPCClient(ctx, nosqlRPCHost, nosqlRPCPort)
-	if err != nil {
-		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
-		logrus.Errorf("ListProductsBySellerID: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
-	leaderInfo, err := nosqlDBClient.GetLeader(ctx, &proto.GetLeaderRequest{})
-	if err != nil {
-		err := fmt.Errorf("unable to Perform %s Operation on Table: %s. %v", "GetLeader", ProductTableName, err)
-		logrus.Errorf("ListProductsBySellerID: %v\n", err)
-		return nil, http.StatusInternalServerError, err
-	}
-	conn.Close()
-	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), int(leaderInfo.GetLeaderNodePort()))
 	if err != nil {
 		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("ListProductsBySellerID: %v\n", err)
@@ -237,7 +221,16 @@ func (product *ProductModel) UpdateProductByID(ctx context.Context) (int, error)
 		return http.StatusInternalServerError, err
 	}
 	conn.Close()
-	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), int(leaderInfo.GetLeaderNodePort()))
+	logrus.Errorf("UpdateProductByID: Leader info: %+v", leaderInfo)
+	leaderPort := 0
+	for i := 0; i < len(nosqlNodeNames); i++ {
+		if nosqlNodeNames[i] == leaderInfo.GetLeaderNodeName() {
+			leaderPort, _ = strconv.Atoi(nosqlNodePorts[i])
+			break
+		}
+	}
+
+	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), leaderPort)
 	if err != nil {
 		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("UpdateProductByID: %v\n", err)
@@ -272,7 +265,16 @@ func (product *ProductModel) DeleteProductByID(ctx context.Context) (int, error)
 		return http.StatusInternalServerError, err
 	}
 	conn.Close()
-	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), int(leaderInfo.GetLeaderNodePort()))
+	logrus.Errorf("DeleteProductByID: Leader info: %+v", leaderInfo)
+	leaderPort := 0
+	for i := 0; i < len(nosqlNodeNames); i++ {
+		if nosqlNodeNames[i] == leaderInfo.GetLeaderNodeName() {
+			leaderPort, _ = strconv.Atoi(nosqlNodePorts[i])
+			break
+		}
+	}
+
+	nosqlDBClient, conn, err = common.NewNOSQLRPCClient(ctx, leaderInfo.GetLeaderNodeName(), leaderPort)
 	if err != nil {
 		err = fmt.Errorf("exception while connecting to SQLDB RPC server. %v", err)
 		logrus.Errorf("DeleteProductByID: %v\n", err)

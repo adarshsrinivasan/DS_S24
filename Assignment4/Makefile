@@ -33,6 +33,7 @@ build-client-seller:
 
 build-client-buyer:
 	go build -o ./cmd/buyer/client-buyer ./cmd/buyer
+	#env GOOS=linux GOARCH=amd64 go build -o ./cmd/buyer/client-buyer ./cmd/buyer
 
 build-sql-server:
 	go build -o ./cmd/dbapi/sql/sql-server ./cmd/dbapi/sql

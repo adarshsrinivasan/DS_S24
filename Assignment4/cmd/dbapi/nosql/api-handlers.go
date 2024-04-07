@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/adarshsrinivasan/DS_S24/library/common"
@@ -21,15 +20,8 @@ func (server *noSQLServer) GetLeader(ctx context.Context, request *libProto.GetL
 		log.Warnf("GetLeader(%s): LeaderID Empty. Waiting for leader to be assigned.", nodeName)
 		time.Sleep(100 * time.Millisecond)
 	}
-	leaderPort := 0
-	for i := 0; i < len(peerNodeNames); i++ {
-		if peerNodeNames[i] == raftServer.cm.leaderID {
-			leaderPort, _ = strconv.Atoi(peerNodePorts[i])
-		}
-	}
 	return &libProto.GetLeaderResponse{
 		LeaderNodeName: raftServer.cm.leaderID,
-		LeaderNodePort: int32(leaderPort),
 		Err:            nil,
 	}, nil
 }
@@ -46,32 +38,14 @@ func (server *noSQLServer) CreateProduct(ctx context.Context, request *libProto.
 }
 
 func (server *noSQLServer) GetProductByID(ctx context.Context, request *libProto.GetProductByIDRequest) (*libProto.GetProductByIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := GetProductByID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := noSQLServerHandlers{}
 	return handler.GetProductByID(ctx, request)
 }
 func (server *noSQLServer) ListProductsByKeyWordsAndCategory(ctx context.Context, request *libProto.ListProductsByKeyWordsAndCategoryRequest) (*libProto.ListProductsByKeyWordsAndCategoryResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := ListProductsByKeyWordsAndCategory
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := noSQLServerHandlers{}
 	return handler.ListProductsByKeyWordsAndCategory(ctx, request)
 }
 func (server *noSQLServer) ListProductsBySellerID(ctx context.Context, request *libProto.ListProductsBySellerIDRequest) (*libProto.ListProductsBySellerIDResponse, error) {
-	payload, _ := proto.Marshal(request)
-	opsType := ListProductsBySellerID
-	requestID, respChan := sendRequestToPeers(ctx, opsType, payload)
-	log.Infof("%s: Waiting. for requestID: %s to complete.\n", opsTypeToStr[opsType], requestID)
-	<-respChan
-	log.Infof("%s: requestID: %s completed!\n", opsTypeToStr[opsType], requestID)
 	handler := noSQLServerHandlers{}
 	return handler.ListProductsBySellerID(ctx, request)
 }

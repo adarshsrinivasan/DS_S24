@@ -18,34 +18,20 @@ type opsType int
 
 const (
 	CreateBuyer opsType = iota
-	GetBuyerByID
-	GetBuyerByUserName
 	UpdateBuyerByID
 	CreateCart
-	GetCartByID
-	GetCartByBuyerID
 	UpdateCartByID
 	DeleteCartByID
 	CreateCartItem
-	GetCartItemByID
-	GetCartItemByCartIDAndProductID
-	ListCartItemByCartID
 	UpdateCartItem
 	DeleteCartItemByCartIDAndProductID
 	DeleteCartItemByCartID
 	DeleteCartItemByProductID
 	CreateSeller
-	GetSellerByID
-	GetSellerByUserName
 	UpdateSellerByID
 	CreateSession
-	GetSessionByID
-	GetSessionByUserID
 	DeleteSessionByID
 	CreateTransaction
-	ListTransactionsBySellerID
-	ListTransactionsByBuyerID
-	ListTransactionsByCartID
 	DeleteTransactionsByCartID
 	DeleteTransactionsByBuyerID
 	DeleteTransactionsBySellerID
@@ -53,34 +39,20 @@ const (
 
 var opsTypeToStr = map[opsType]string{
 	CreateBuyer:                        "CreateBuyer",
-	GetBuyerByID:                       "GetBuyerByID",
-	GetBuyerByUserName:                 "GetBuyerByUserName",
 	UpdateBuyerByID:                    "UpdateBuyerByID",
 	CreateCart:                         "CreateCart",
-	GetCartByID:                        "GetCartByID",
-	GetCartByBuyerID:                   "GetCartByBuyerID",
 	UpdateCartByID:                     "UpdateCartByID",
 	DeleteCartByID:                     "DeleteCartByID",
 	CreateCartItem:                     "CreateCartItem",
-	GetCartItemByID:                    "GetCartItemByID",
-	GetCartItemByCartIDAndProductID:    "GetCartItemByCartIDAndProductID",
-	ListCartItemByCartID:               "ListCartItemByCartID",
 	UpdateCartItem:                     "UpdateCartItem",
 	DeleteCartItemByCartIDAndProductID: "DeleteCartItemByCartIDAndProductID",
 	DeleteCartItemByCartID:             "DeleteCartItemByCartID",
 	DeleteCartItemByProductID:          "DeleteCartItemByProductID",
 	CreateSeller:                       "CreateSeller",
-	GetSellerByID:                      "GetSellerByID",
-	GetSellerByUserName:                "GetSellerByUserName",
 	UpdateSellerByID:                   "UpdateSellerByID",
 	CreateSession:                      "CreateSession",
-	GetSessionByID:                     "GetSessionByID",
-	GetSessionByUserID:                 "GetSessionByUserID",
 	DeleteSessionByID:                  "DeleteSessionByID",
 	CreateTransaction:                  "CreateTransaction",
-	ListTransactionsBySellerID:         "ListTransactionsBySellerID",
-	ListTransactionsByBuyerID:          "ListTransactionsByBuyerID",
-	ListTransactionsByCartID:           "ListTransactionsByCartID",
 	DeleteTransactionsByCartID:         "DeleteTransactionsByCartID",
 	DeleteTransactionsByBuyerID:        "DeleteTransactionsByBuyerID",
 	DeleteTransactionsBySellerID:       "DeleteTransactionsBySellerID",
@@ -132,6 +104,7 @@ func (m message) toString() string {
 var (
 	sentRequestMsgs                  = map[string]message{}
 	sentSequenceMsgs                 = map[string]message{}
+	deliveredSequenceMsgs            = map[string]bool{}
 	toBeDeliveredBufferedRequestMsgs = make([]message, 0)
 	outOfOrderBufferedRequestMsgs    = map[string]message{}
 	outOfOrderBufferedSequenceMsgs   = map[string]message{}
@@ -169,6 +142,9 @@ func recordSequenceSentMsg(ctx context.Context, msg *message) {
 }
 
 func addRequestMsgToToBeDeliveredBuffer(ctx context.Context, msg *message) {
+	if _, ok := deliveredSequenceMsgs[msg.ID]; ok {
+		return
+	}
 	toBeDeliveredBufferedRequestMsgs = append(toBeDeliveredBufferedRequestMsgs, *msg)
 }
 
@@ -184,6 +160,10 @@ func addMsgToRetransmitTracker(ctx context.Context, msg *message) {
 	retransmitTracker[getRetransmitMsgKey(ctx, msg)] = *msg
 }
 
+func addMsgToDeliveredSequenceMsgs(ctx context.Context, msg *message) {
+	deliveredSequenceMsgs[msg.ID] = true
+}
+
 func removeMsgFromRetransmitTracker(ctx context.Context, msg *message) {
 	key := getRetransmitMsgKey(ctx, msg)
 	if _, ok := retransmitTracker[key]; ok {
@@ -192,10 +172,12 @@ func removeMsgFromRetransmitTracker(ctx context.Context, msg *message) {
 }
 
 func removeRequestMsgFromToBeDeliveredBuffered(ctx context.Context, msg *message) {
-	i := 0
-	for ; toBeDeliveredBufferedRequestMsgs[i].ID != msg.ID; i++ {
+	for i := 0; i < len(toBeDeliveredBufferedRequestMsgs); i++ {
+		if toBeDeliveredBufferedRequestMsgs[i].ID != msg.ID {
+			toBeDeliveredBufferedRequestMsgs = append(toBeDeliveredBufferedRequestMsgs[:i], toBeDeliveredBufferedRequestMsgs[i+1:]...)
+			break
+		}
 	}
-	toBeDeliveredBufferedRequestMsgs = append(toBeDeliveredBufferedRequestMsgs[:i], toBeDeliveredBufferedRequestMsgs[i+1:]...)
 }
 
 func marshallMsg(ctx context.Context, msg *message) []byte {
@@ -211,8 +193,13 @@ func unmarshallMsg(ctx context.Context, msgBytes []byte) (*message, error) {
 	return &msg, nil
 }
 
-func broadcastMsgToPeers(ctx context.Context, msg *message) {
+func broadcastMsgToPeers(ctx context.Context, msg *message, sendLastNodeName string) {
+	sendLastNodePort := ""
 	for i := 0; i < len(peerNodeNames); i++ {
+		if peerNodeNames[i] == sendLastNodeName {
+			sendLastNodePort = peerNodePorts[i]
+			continue
+		}
 		addr := net.JoinHostPort(peerNodeNames[i], peerNodePorts[i])
 		if raddr, err := net.ResolveUDPAddr("udp", addr); err != nil {
 			log.Errorf("broadcastMsgToPeers(%s): Exception while resolving addr %s. %v\n", nodeName, addr, err)
@@ -230,6 +217,7 @@ func broadcastMsgToPeers(ctx context.Context, msg *message) {
 			}
 		}
 	}
+	sendMsgToNode(ctx, sendLastNodeName, sendLastNodePort, msg)
 	return
 }
 
@@ -303,7 +291,7 @@ func sendSequenceRetransmitToPeers(ctx context.Context, msg *message, from, to i
 		msg.GlobalSeqNum = i
 		addMsgToRetransmitTracker(ctx, msg)
 		msg.MsgType = MsgType_Retransmit
-		broadcastMsgToPeers(ctx, msg)
+		broadcastMsgToPeers(ctx, msg, "")
 	}
 	return
 }
@@ -339,12 +327,23 @@ func sendRequestToPeers(ctx context.Context, opsType opsType, payload []byte) (s
 	}
 	responseTrackers[requestID] = responseChan
 	recordRequestSentMsg(ctx, requestMsg)
-	broadcastMsgToPeers(ctx, requestMsg)
+	nextLeader := ((globalCounter.Load() + 1) % int32(len(peerNodeNames)))
+	broadcastMsgToPeers(ctx, requestMsg, fmt.Sprintf("%s%d", CustomerDBNodeNameBase, nextLeader))
 	return requestID, responseChan
 }
 
 func checkTurnAndSendSequenceToPeers(ctx context.Context) {
 	nextLeader := ((globalCounter.Load() + 1) % int32(len(peerNodeNames)))
+	if nextLeader == 0 {
+		nextLeader = int32(len(peerNodeNames))
+	}
+	for len(toBeDeliveredBufferedRequestMsgs) > 0 {
+		if _, ok := deliveredSequenceMsgs[toBeDeliveredBufferedRequestMsgs[0].ID]; ok {
+			toBeDeliveredBufferedRequestMsgs = toBeDeliveredBufferedRequestMsgs[1:]
+		} else {
+			break
+		}
+	}
 	if nodeName == fmt.Sprintf("%s%d", CustomerDBNodeNameBase, nextLeader) && len(toBeDeliveredBufferedRequestMsgs) > 0 {
 		log.Infof("checkTurnAndSendSequenceToPeers(%s): Taking responsibility to send next sequence message.\n", nodeName)
 		for len(retransmitTracker) > 0 {
@@ -355,11 +354,11 @@ func checkTurnAndSendSequenceToPeers(ctx context.Context) {
 		nextMsg := toBeDeliveredBufferedRequestMsgs[0]
 		nextMsg.MsgType = MsgType_Sequence
 		nextMsg.SequenceNodeName = nodeName
-		nextMsg.GlobalSeqNum = globalCounter.Add(1)
+		nextMsg.GlobalSeqNum = (globalCounter.Load() + 1)
 		recordSequenceSentMsg(ctx, &nextMsg)
-		broadcastMsgToPeers(ctx, &nextMsg)
+		broadcastMsgToPeers(ctx, &nextMsg, "")
 	} else {
-		log.Infof("checkTurnAndSendSequenceToPeers(%s): Not my responsibility to send next sequence message. Responsibility of: %s\n", nodeName, fmt.Sprintf("%s%d", CustomerDBNodeNameBase, nextLeader))
+		log.Infof("checkTurnAndSendSequenceToPeers(%s): Not my responsibility to send next sequence message. Responsibility of: %s", nodeName, fmt.Sprintf("%s%d", CustomerDBNodeNameBase, nextLeader))
 	}
 }
 
@@ -368,7 +367,8 @@ func handleReceivedMsg(ctx context.Context, msg *message) {
 	switch msg.MsgType {
 	case MsgType_Sequence:
 		{
-			if ((globalCounter.Load() + 1) == msg.GlobalSeqNum) || (globalCounter.Load() == msg.GlobalSeqNum && msg.SequenceNodeName == nodeName) {
+			if (globalCounter.Load() + 1) == msg.GlobalSeqNum {
+				removeRequestMsgFromToBeDeliveredBuffered(ctx, msg)
 				globalCounter.Add(1)
 				deliverSequenceMsg(ctx, msg)
 				for bufferedSeqMsg, ok := outOfOrderBufferedSequenceMsgs[fmt.Sprintf("%d", (globalCounter.Load()+1))]; ok; {
@@ -424,7 +424,7 @@ func handleReceivedMsg(ctx context.Context, msg *message) {
 }
 
 func deliverSequenceMsg(ctx context.Context, msg *message) {
-	removeRequestMsgFromToBeDeliveredBuffered(ctx, msg)
+	addMsgToDeliveredSequenceMsgs(ctx, msg)
 	//TODO: Add retry if handleRequest fails???
 	if err := handleRequest(ctx, msg.ID, msg.OpsType, msg.Payload); err != nil {
 		log.Errorf("deliverSequenceMsg(%s): Exception while delivering Sequence msg: SeqNo.: %d, opsType: %s, Err: %v\n", nodeName, msg.GlobalSeqNum, opsTypeToStr[msg.OpsType], err)
@@ -452,30 +452,6 @@ func handleRequest(ctx context.Context, requestID string, opsType opsType, paylo
 			log.Errorf("handleRequest: %v\n", err)
 			return err
 		}
-	case GetBuyerByID:
-		msg := &libProto.GetBuyerByIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetBuyerByID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetBuyerByUserName:
-		msg := &libProto.GetBuyerByUserNameRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetBuyerByUserName(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
 	case UpdateBuyerByID:
 		msg := &libProto.UpdateBuyerByIDRequest{}
 		if err := proto.Unmarshal(payload, msg); err != nil {
@@ -496,30 +472,6 @@ func handleRequest(ctx context.Context, requestID string, opsType opsType, paylo
 			return err
 		}
 		if _, err := sqlRPCServer.CreateCart(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetCartByID:
-		msg := &libProto.GetCartByIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetCartByID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetCartByBuyerID:
-		msg := &libProto.GetCartByBuyerIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetCartByBuyerID(ctx, msg); err != nil {
 			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
 			log.Errorf("handleRequest: %v\n", err)
 			return err
@@ -556,42 +508,6 @@ func handleRequest(ctx context.Context, requestID string, opsType opsType, paylo
 			return err
 		}
 		if _, err := sqlRPCServer.CreateCartItem(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetCartItemByID:
-		msg := &libProto.GetCartItemByIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetCartItemByID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetCartItemByCartIDAndProductID:
-		msg := &libProto.GetCartItemByCartIDAndProductIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetCartItemByCartIDAndProductID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case ListCartItemByCartID:
-		msg := &libProto.ListCartItemByCartIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.ListCartItemByCartID(ctx, msg); err != nil {
 			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
 			log.Errorf("handleRequest: %v\n", err)
 			return err
@@ -656,30 +572,6 @@ func handleRequest(ctx context.Context, requestID string, opsType opsType, paylo
 			log.Errorf("handleRequest: %v\n", err)
 			return err
 		}
-	case GetSellerByID:
-		msg := &libProto.GetSellerByIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetSellerByID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetSellerByUserName:
-		msg := &libProto.GetSellerByUserNameRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetSellerByUserName(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
 	case UpdateSellerByID:
 		msg := &libProto.UpdateSellerByIDRequest{}
 		if err := proto.Unmarshal(payload, msg); err != nil {
@@ -704,30 +596,6 @@ func handleRequest(ctx context.Context, requestID string, opsType opsType, paylo
 			log.Errorf("handleRequest: %v\n", err)
 			return err
 		}
-	case GetSessionByID:
-		msg := &libProto.GetSessionByIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetSessionByID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case GetSessionByUserID:
-		msg := &libProto.GetSessionByUserIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.GetSessionByUserID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
 	case DeleteSessionByID:
 		msg := &libProto.DeleteSessionByIDRequest{}
 		if err := proto.Unmarshal(payload, msg); err != nil {
@@ -748,42 +616,6 @@ func handleRequest(ctx context.Context, requestID string, opsType opsType, paylo
 			return err
 		}
 		if _, err := sqlRPCServer.CreateTransaction(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case ListTransactionsBySellerID:
-		msg := &libProto.ListTransactionsBySellerIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.ListTransactionsBySellerID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case ListTransactionsByBuyerID:
-		msg := &libProto.ListTransactionsByBuyerIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.ListTransactionsByBuyerID(ctx, msg); err != nil {
-			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-	case ListTransactionsByCartID:
-		msg := &libProto.ListTransactionsByCartIDRequest{}
-		if err := proto.Unmarshal(payload, msg); err != nil {
-			err = fmt.Errorf("exception while Unmarshalling %s Msg: %v", opsTypeToStr[opsType], err)
-			log.Errorf("handleRequest: %v\n", err)
-			return err
-		}
-		if _, err := sqlRPCServer.ListTransactionsByCartID(ctx, msg); err != nil {
 			err = fmt.Errorf("exception while invoking %s operation: %v", opsTypeToStr[opsType], err)
 			log.Errorf("handleRequest: %v\n", err)
 			return err

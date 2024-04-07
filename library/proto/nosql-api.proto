@@ -116,6 +116,5 @@ message GetLeaderRequest {}
 
 message GetLeaderResponse {
   string leaderNodeName = 1;
-  int32 leaderNodePort = 2;
-  proto.error err = 3;
+  proto.error err = 2;
 }
