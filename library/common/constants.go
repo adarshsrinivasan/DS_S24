@@ -12,6 +12,8 @@ const (
 	PeerNodePortsEnv  = "PEER_NODE_PORTS"
 	SyncHostEnv       = "SYNC_HOST"
 	SyncPortEnv       = "SYNC_PORT"
+	RequestPortEnv    = "REQUEST_PORT"
+	ClusterKeyEnv     = "CLUSTER_KEY"
 )
 const (
 	BUYER UserType = iota

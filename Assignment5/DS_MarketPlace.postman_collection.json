@@ -1,0 +1,1384 @@
+{
+	"info": {
+		"_postman_id": "1540849d-2cbe-4c7f-a8e4-e407c5d2f19a",
+		"name": "DS_MarketPlace",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3535804"
+	},
+	"item": [
+		{
+			"name": "Seller",
+			"item": [
+				{
+					"name": "Create Seller",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"userSessionId\", jsonData.token.base64);",
+									"postman.setEnvironmentVariable(\"userSessionExpires\", jsonData.token.expires);",
+									"postman.setEnvironmentVariable(\"userSessionEnterprise\", jsonData.enterprise.id.base64);",
+									"postman.setEnvironmentVariable(\"userSessionRole\", jsonData.role.id);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "X-Request-Id",
+								"value": "{{userRequestToken}}",
+								"type": "text"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{userCsrfToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Adarsh Seller\",\n    \"userName\": \"adsr8793\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/create",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"sellerSessionID\", jsonData.sessionID);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "X-Request-Id",
+								"value": "{{userRequestToken}}",
+								"type": "text"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{userCsrfToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"adsr8793\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/login",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller Get Rating",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"adsr8793\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/getRating",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"getRating"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller CreateItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"lastItemID\", jsonData.id);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"adsr8793\",\n    \"category\": 2,\n    \"keywords\": [\"aaa\", \"bbb\"],\n    \"condition\": 0,\n    \"salePrice\": 10.0,\n    \"quantity\": 5\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/createItem",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"createItem"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller UpdateItemSalePrice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"{{lastItemID}}\",\n    \"salePrice\": 11.0\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/updateItemSalePrice",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"updateItemSalePrice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller RemoveItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"{{lastItemID}}\",\n    \"quantity\": 4\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/removeItem",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"removeItem"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller GetItems",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/getItems",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"getItems"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller GetSoldItems",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/getSoldItems",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"getSoldItems"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Seller Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{sellerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"adsr8793\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/seller/logout",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"seller",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Buyer",
+			"item": [
+				{
+					"name": "Create Buyer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"userSessionId\", jsonData.token.base64);",
+									"postman.setEnvironmentVariable(\"userSessionExpires\", jsonData.token.expires);",
+									"postman.setEnvironmentVariable(\"userSessionEnterprise\", jsonData.enterprise.id.base64);",
+									"postman.setEnvironmentVariable(\"userSessionRole\", jsonData.role.id);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "X-Request-Id",
+								"value": "{{userRequestToken}}",
+								"type": "text"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{userCsrfToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Adarsh Buyer\",\n    \"userName\": \"adsr8794\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/create",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"buyerSessionID\", jsonData.sessionID);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "X-Request-Id",
+								"value": "{{userRequestToken}}",
+								"type": "text"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{userCsrfToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"adsr8794\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/login",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"adsr8793\",\n    \"password\": \"verystrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/logout",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer SearchItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"keywords\": [\"aaa\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/searchItems",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"searchItems"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer AddItemToCart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"{{lastItemID}}\",\n    \"quantity\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/addItemToCart",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"addItemToCart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer GetCart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/getCart",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"getCart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer RemoveItemFromCart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"{{lastItemID}}\",\n    \"quantity\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/removeItemFromCart",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"removeItemFromCart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer SaveCart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/saveCart",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"saveCart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer ClearCart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/clearCart",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"clearCart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer MakePurchase",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/makePurchase",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"makePurchase"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer FeedBack",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/feedback/{{lastItemID}}/liked",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"feedback",
+								"{{lastItemID}}",
+								"liked"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer GetSellerRating",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/getSellerRating/{{lastItemID}}",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"getSellerRating",
+								"{{lastItemID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buyer GetPurchaseHistory",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"<========== Request headers =========>\");",
+									"console.log(request.headers);",
+									"var jsonData = JSON.parse(responseBody);",
+									"",
+									"if (responseCode.code === 200 ) {",
+									"    console.log(\"User Login Successful\");",
+									"}",
+									"//setTimeout(function(){}, environment.Wait); ",
+									"",
+									"console.log(\" <=================== ResponseBody =================== >\"+  responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Referer",
+								"value": "{{baseUrl}}/api/v1/",
+								"type": "text"
+							},
+							{
+								"key": "User-Session-Id",
+								"value": "{{buyerSessionID}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUserUrl}}/api/v1/marketplace/buyer/getPurchaseHistory",
+							"host": [
+								"{{baseUserUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"marketplace",
+								"buyer",
+								"getPurchaseHistory"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
