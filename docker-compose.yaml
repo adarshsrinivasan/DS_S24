@@ -304,7 +304,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50000:50000"
+      - "50010:50000"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50000
@@ -325,7 +325,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50000:50000"
+      - "50011:50000"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50000
@@ -346,7 +346,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50000:50000"
+      - "50012:50000"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50000
@@ -367,7 +367,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50000:50000"
+      - "50013:50000"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50000
@@ -389,7 +389,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50001:50001"
+      - "50020:50001"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50001
@@ -410,7 +410,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50001:50001"
+      - "50021:50001"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50001
@@ -431,7 +431,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50001:50001"
+      - "50022:50001"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50001
@@ -452,7 +452,7 @@ services:
       dockerfile: ./Dockerfile-server
     restart: always
     ports:
-      - "50001:50001"
+      - "50023:50001"
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 50001

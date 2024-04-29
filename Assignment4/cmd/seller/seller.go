@@ -26,7 +26,7 @@ var (
 	ctx               context.Context
 	sessionID         string
 	httpServerHost    = common.GetEnv(ServerHostEnv, "localhost")
-	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50000"))
+	httpServerPort, _ = strconv.Atoi(common.GetEnv(ServerPortEnv, "50010"))
 	baseURL           = fmt.Sprintf("http://%s:%d/api/v1/marketplace/%s", httpServerHost, httpServerPort, ServiceName)
 )
 
